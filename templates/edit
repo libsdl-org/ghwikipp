@@ -1,0 +1,25 @@
+<html><head><title>Editing @page@</title></head><body>
+
+@cooked@
+
+<hr/>
+
+<form action='/@page@/post' method='post'>
+Make changes here:<br/>
+<textarea name="newversion" rows='20' cols='80'>@raw@</textarea><br/>
+Describe changes briefly here:<br/>
+<input type="text" name="comment" /><br/>
+Click this when done:<br/>
+<input type="submit" name="submit" value="Submit" />
+
+<hr/>
+
+[ 
+<a href='https://github.com/@github_user@'><img width='32' height='32' src='@github_avatar@'/> Logged in as @github_name@</a>
+|
+<a href='/@page@/logout'>logout</a>
+]
+
+</body></html>
+
+

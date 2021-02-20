@@ -1,0 +1,18 @@
+<html><head><title>@page@</title></head><body>
+
+<p>Thank you for your edit!</p>
+
+<p>You are a trusted contributor, so your changes
+<a href="@commiturl@">went right into the wiki</a>
+without the need for peer review. Thank you for
+editing responsibly!</p>
+
+<p>Below is the current state of the page, with your edits.</p>
+
+<hr/>
+
+@cooked@
+
+</body></html>
+
+

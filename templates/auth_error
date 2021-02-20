@@ -1,0 +1,13 @@
+<html><head><title>@page@</title></head><body>
+
+<p><h1>@httpresponse@</h1></p>
+
+<p>We can't go on unless you authorize on GitHub first, sorry.</p>
+<p>GitHub error: @error@</p>
+<p>GitHub reason: @reason@</p>
+
+<p><a href="/">Click here</a> to go home.</p>
+
+</body></html>
+
+

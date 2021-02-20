@@ -1,0 +1,8 @@
+<html><head><title>@page@</title></head><body>
+
+<p><h1>@httpresponse@</h1></p>
+
+<p>@message@</p>
+
+</body></html>
+

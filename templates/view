@@ -1,0 +1,17 @@
+<html><head><title>@page@</title></head><body>
+
+@cooked@
+
+<hr/>
+[
+<a href='/@page@/edit'>edit</a>
+<!--
+|
+<a href='/@page@/delete'>delete</a>
+-->
+|
+<a href='/@page@/history'>history</a>
+]
+
+</body></html>
+

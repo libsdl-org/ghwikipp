@@ -1,0 +1,20 @@
+<html><head><title>@page@</title></head><body>
+<p><h1>@page@</h1></p>
+
+<p>Thank you for your edit!</p>
+
+<p>Your changes have gone into a pull request, where they will be examined by
+a human and then approved or rejected.</p>
+
+<p>You can check on that process <a href="@prurl@">at the pull request page</a>.</p>
+
+<p>After a few sucessful pull requests, your changes will go onto the wiki
+automatically, without an approval process!</p>
+
+<p>Thanks!</p>
+
+<p><a href="/@page@">Back to the (changes-not-yet-approved) page.</a></p>
+
+</body></html>
+
+

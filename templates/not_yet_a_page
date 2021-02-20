@@ -1,0 +1,9 @@
+<html><head><title>@page@</title></head><body>
+<p><h1>@page@</h1></p>
+
+<p>No such page '@page@' yet.</p>
+<p><a href='/@page@/edit'>Click here</a> to create it!</p>
+
+</body></html>
+
+
