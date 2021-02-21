@@ -383,7 +383,7 @@ function handle_oauth_error()
     }
 }
 
-function call_github_api($url, $args=NULL, $token=NULL, $ispost=false)
+function call_github_api($url, $args=NULL, $token=NULL, $ispost=false, $failonerror=true)
 {
     global $user_agent;
 
@@ -433,6 +433,9 @@ function call_github_api($url, $args=NULL, $token=NULL, $ispost=false)
      if ($curlfailed) {
          fail503("Couldn't talk to GitHub API, try again later ($curlerr)");
      } else if (($httprc != 200) && ($httprc != 201)) {
+         if (!$failonerror) {
+             return NULL;
+         }
          fail503("GitHub API reported error $httprc, try again later");
      }
 
@@ -444,7 +447,7 @@ function call_github_api($url, $args=NULL, $token=NULL, $ispost=false)
 }
 
 
-function authorize_with_github()
+function authorize_with_github($force=false)
 {
     global $github_oauth_clientid;
     global $github_oauth_secret;
@@ -455,7 +458,16 @@ function authorize_with_github()
 
     //print_r($_SESSION);
 
-    if ( isset($_SESSION['github_user']) &&
+    // $force==true means we're being asked to make sure GitHub is still cool
+    //  with this session, which we do before requests that make changes, like
+    //  committing an edit. If the user auth'd with GitHub but then logged
+    //  out over there since our last check, we might be letting the user do
+    //  things they shouldn't be allowed to do anymore. For the basic workflow
+    //  we don't care if they are still _actually_ logged in at every step,
+    //  though.
+
+    if ( !$force &&
+         isset($_SESSION['github_user']) &&
          isset($_SESSION['github_email']) &&
          isset($_SESSION['github_name']) &&
          isset($_SESSION['github_access_token']) &&
@@ -481,37 +493,55 @@ function authorize_with_github()
             'code' => $_REQUEST['code']
         ]);
 
+        //print_r($response);
+
         if (!isset($response['access_token'])) {
             fail503("GitHub OAuth didn't provide an access token! Please try again later.");
         }
 
         $token = $response['access_token'];
         $_SESSION['github_access_token'] = $token;
-        $response = call_github_api('https://api.github.com/user', NULL, $token);
+    }
 
-        //print("GITHUB USER API RESPONSE:\n"); print_r($response);
+    // If we already have an access token (or just got one, above), see if
+    //  it's still valid. If it isn't, force a full reauth. If it still
+    //  works, GitHub still thinks we're cool.
+    if (isset($_SESSION['github_access_token']))
+    {
+        $response = call_github_api('https://api.github.com/user', NULL, $_SESSION['github_access_token'], false, false);
 
-        if ( !isset($response['login']) ||
-             !isset($response['name']) ||
-             !isset($response['email']) ) {
-            unset($_SESSION['github_access_token']);
-            fail503("GitHub didn't tell us everything we need to know about you. Please try again later.");
+        if ($response != NULL) {
+            print("GITHUB USER API RESPONSE:\n"); print_r($response);
+
+            if ( !isset($response['login']) ||
+                 !isset($response['name']) ||
+                 !isset($response['email']) ) {
+                unset($_SESSION['github_access_token']);
+                fail503("GitHub didn't tell us everything we need to know about you. Please try again later.");
+            }
+
+            $_SESSION['expected_ipaddr'] = $_SERVER['REMOTE_ADDR'];
+            $_SESSION['last_auth_time'] = time();
+            $_SESSION['github_user'] = $response['login'];
+            $_SESSION['github_email'] = $response['email'];
+            $_SESSION['github_name'] = $response['name'];
+            $_SESSION['github_avatar'] = isset($response['avatar_url']) ? $response['avatar_url'] : '';
+
+            //print("SESSION:\n"); print_r($_SESSION);
+
+            // !!! FIXME: see if we're blocked, and drop session immediately and fail.
+
+            //print("AUTH TO GITHUB VALID AND READY\n");
+            // logged in, verified, and good to go!
+
+            if (isset($_REQUEST['code'])) {   //Force a redirect to dump the code and state URL args.
+                redirect($_SERVER['PHP_SELF'], 'Reloading to finish login!');
+            }
+
+            return;  // logged in and ready to go as-is.
         }
 
-        $_SESSION['expected_ipaddr'] = $_SERVER['REMOTE_ADDR'];
-        $_SESSION['last_auth_time'] = time();
-        $_SESSION['github_user'] = $response['login'];
-        $_SESSION['github_email'] = $response['email'];
-        $_SESSION['github_name'] = $response['name'];
-        $_SESSION['github_avatar'] = isset($response['avatar_url']) ? $response['avatar_url'] : '';
-
-        //print("SESSION:\n"); print_r($_SESSION);
-
-        // !!! FIXME: see if we're blocked, and drop session immediately and fail.
-
-        //print("NEW AUTH TO GITHUB COMPLETE\n");
-        // logged in, verified, and good to go! Force a redirect to dump the code and state URL args.
-        redirect($_SERVER['PHP_SELF'], 'Reloading to finish login!');
+        // still here? We'll try reauthing, below.
     }
 
 
@@ -541,6 +571,10 @@ function authorize_with_github()
     //  same URL and we can try again, this time with authorization.
 }
 
+function force_authorize_with_github()
+{
+    authorize_with_github(true);
+}
 
 function make_new_page_version_pr($page, $newtext, $comment, $trusted_author)
 {
@@ -682,7 +716,7 @@ if ($operation == 'view') {  // just serve the existing page.
         $_SESSION['post_comment'] = $_POST['comment'];
     }
 
-    authorize_with_github();  // only returns if we are authorized.
+    force_authorize_with_github();  // only returns if we are authorized.
 
     if (!isset($_SESSION['post_newversion'])) {
         fail400("New version of page was not posted with this request. <a href='/$document/edit'>Try editing again?</a>");
