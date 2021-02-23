@@ -207,7 +207,9 @@ function cook_page_from_files($rawfname, $cookedfname)
         $cooked = cook_string($raw, $from_format);
         if (($cooked != '') || ($raw == '')) {
             @mkdir(dirname($cookedfname));
-            file_put_contents($cookedfname, $cooked);
+            if (file_put_contents($cookedfname, $cooked) != strlen($cooked)) {
+                fail503("Failed to write $cookedfname when cooking. Please try again later.");
+            }
         }
     }
     release_git_repo_lock();
