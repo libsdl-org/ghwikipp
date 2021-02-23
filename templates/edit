@@ -7,8 +7,7 @@
 <form action='/@page@/post' method='post'>
 Make changes here:<br/>
 <textarea name="newversion" rows='20' cols='80'>@raw@</textarea><br/>
-Describe changes briefly here:<br/>
-<input type="text" name="comment" />
+<input type="text" placeholder="Brief description of changes" name="comment" />
 <select name="format">
   <option value="md">Markdown</option>
   <option value="mediawiki">MediaWiki</option>
@@ -19,8 +18,6 @@ Describe changes briefly here:<br/>
 
 [ 
 <a href='https://github.com/@github_user@'><img width='32' height='32' src='@github_avatar@'/> Logged in as @github_name@</a>
-|
-<a href='/@page@/logout'>logout</a>
 ]
 
 </body></html>
