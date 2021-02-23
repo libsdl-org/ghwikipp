@@ -802,6 +802,31 @@ if ($operation == 'view') {  // just serve the existing page.
 } else if ($operation == 'webhook') {
     github_webhook();    // GitHub POSTs here whenever the wiki repo is pushed to.
 
+} else if ($operation == 'recook') {  // !!! FIXME: this should be a recookall, and "recook" should just redo $document.
+
+    // !!! FIXME: checking for admins should be a separate function.
+    // !!! FIXME:  also: admins shouldn't be hardcoded to my github login.  :)
+    force_authorize_with_github();  // only returns if we are authorized.
+    if ($_SESSION['github_user'] != 'icculus') {
+        fail400('Not available to you.');
+    }
+
+    header('Content-Type: text/plain; charset=utf-8');
+    $str = "\nRECOOKING...\n\n";
+    $updated = array();
+    $failed = recook_tree($raw_data, $cooked_data, '', $updated);
+    foreach ($updated as $f) {
+        $str .= "$f\n";
+    }
+    $str .= "\n";
+
+    if ($failed) {
+        fail503("$str\nFAILED TO RECOOK DATA!\n", 'fail_plaintext');
+    }
+
+    $str .= "\nTREE RECOOKED.\n";
+    print("$str\n");
+
 } else {
     fail400("Unknown operation '$operation'");
 }
