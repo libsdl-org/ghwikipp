@@ -649,8 +649,8 @@ function make_new_page_version($page, $ext, $newtext, $comment, $trusted_author)
     $rmcmd = '';
     foreach ($supported_formats as $findext => $format) {
         if ($ext != $findext) {
-            $rmpage = "$raw_data/$page.$findext";
-            if (file_exists($rmpage)) {
+            $rmpage = "$page.$findext";
+            if (file_exists("$raw_data/$rmpage")) {
                 $escrmpage = escapeshellarg($rmpage);
                 $rmcmd .= " && git rm $escrmpage";
             }
