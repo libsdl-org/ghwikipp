@@ -1,10 +1,11 @@
 <?php
 
-
-// !!! FIXME: support both Markdown _and_ mediawiki? Or just one?
-
-
 require_once('config.php');
+
+$supported_formats = [
+    'md' => 'markdown_github+backtick_code_blocks',
+    'mediawiki' => 'mediawiki'
+];
 
 $github_url = "https://github.com/$github_repo_owner/$github_repo";
 $document = NULL;
@@ -155,14 +156,18 @@ function require_session()
     }
 }
 
-function cook_string($str)
+function cook_string($str, $from_pandoc_format)
 {
+    if ($from_pandoc_format == NULL) {
+        return "<pre>\n$str\n</pre>\n";  // oh well.
+    }
+
     $descriptorspec = array(
         0 => array('pipe', 'r'),  // stdin
         1 => array('pipe', 'w'),  // stdout
     );
 
-    $proc = proc_open([ 'pandoc', '-f', 'mediawiki', '-t', 'html', '--toc' ], $descriptorspec, $pipes);
+    $proc = proc_open([ 'pandoc', '-f', $from_pandoc_format, '-t', 'html', '--toc' ], $descriptorspec, $pipes);
 
     $retval = '';
     if (is_resource($proc)) {
@@ -178,7 +183,18 @@ function cook_string($str)
 
 function cook_page_from_files($rawfname, $cookedfname)
 {
+    global $supported_formats;
+
     $cooked = NULL;
+
+    $from_format = NULL;
+    $ext = strrchr($rawfname, '.');
+    if ($ext !== false) {
+        $ext = substr($ext, 1);
+        if (isset($supported_formats[$ext])) {
+            $from_format = $supported_formats[$ext];
+        }
+    }
 
     obtain_git_repo_lock();
     if (!file_exists($rawfname)) {  // was deleted?
@@ -188,7 +204,7 @@ function cook_page_from_files($rawfname, $cookedfname)
         if ($raw === false) {
             fail503("Failed to read $rawfname to cook it. Please try again later.");
         }
-        $cooked = cook_string($raw);
+        $cooked = cook_string($raw, $from_format);
         if (($cooked != '') || ($raw == '')) {
             @mkdir(dirname($cookedfname));
             file_put_contents($cookedfname, $cooked);
@@ -202,11 +218,13 @@ function cook_page_from_files($rawfname, $cookedfname)
 function cook_page($page)
 {
     global $raw_data, $cooked_data;
-    return cook_page_from_files("$raw_data/$page.mediawiki", "$cooked_data/$page.html");
+    return cook_page_from_files("$raw_data/$page.md", "$cooked_data/$page.html");
 }
 
 function recook_tree($rawbasedir, $cookedbasedir, $dir, &$updated)
 {
+    global $supported_formats;
+
     $dirp = opendir("$rawbasedir/$dir");
     if ($dirp === false) {
         return;
@@ -220,7 +238,7 @@ function recook_tree($rawbasedir, $cookedbasedir, $dir, &$updated)
         } else {
             $src = "$rawbasedir/$page";
             $dst = "$cookedbasedir/$page";
-            $dst = preg_replace('/\.mediawiki$/', '.html', $dst);
+            $dst = preg_replace('/\..*?$/', '.html', $dst);
             $srcmtime = filemtime($src);
             $dstmtime = @filemtime($dst);
             if (($srcmtime === false) || ($dstmtime === false) || ($srcmtime >= $dstmtime)) {
@@ -242,8 +260,16 @@ function recook_tree($rawbasedir, $cookedbasedir, $dir, &$updated)
         $page = ($dir == '') ? $dent : "$dir/$dent";
         $dst = "$cookedbasedir/$page";
         $src = "$rawbasedir/$page";
-        $src = preg_replace('/\.html$/', '.mediawiki', $src);
-        if (!file_exists($src)) {
+        $src = preg_replace('/\.html$/', '', $src);
+        $found = false;
+        foreach ($supported_formats as $ext => $format) {
+            if (file_exists("$src.$ext")) {
+                $found = true;
+                break;
+            }
+        }
+
+        if (!found) {
             if (is_dir($dst)) {
                 @rmdir($dst);  // we don't recurse here, since we're recursing above.
             } else {
@@ -576,9 +602,10 @@ function force_authorize_with_github()
     authorize_with_github(true);
 }
 
-function make_new_page_version_pr($page, $newtext, $comment, $trusted_author)
+function make_new_page_version($page, $ext, $newtext, $comment, $trusted_author)
 {
-    global $raw_data, $git_commit_message_file, $git_committer_user, $github_url, $github_committer_token, $github_repo_owner, $github_repo;
+    global $raw_data, $git_commit_message_file, $git_committer_user, $github_url;
+    global $github_committer_token, $github_repo_owner, $github_repo, $supported_formats;
 
     if (!isset($_SESSION['github_access_token'])) {  // should have called authorize_with_github before this!
         fail503('BUG: This program should have had you authorize with GitHub first!');
@@ -591,8 +618,8 @@ function make_new_page_version_pr($page, $newtext, $comment, $trusted_author)
         $comment = 'Updated.';
     }
 
-    $gitfname = "$raw_data/$page.mediawiki";
-    $escpage = escapeshellarg("$page.mediawiki");
+    $gitfname = "$raw_data/$page.$ext";
+    $escpage = escapeshellarg("$page.$ext");
     $escrawdata = escapeshellarg($raw_data);
 
     obtain_git_repo_lock();
@@ -616,11 +643,23 @@ function make_new_page_version_pr($page, $newtext, $comment, $trusted_author)
     $escauthor = escapeshellarg($author);
     $escmsgfile = escapeshellarg($git_commit_message_file);
 
+    // remove files if the file extension changed.
+    $rmcmd = '';
+    foreach ($supported_formats as $findext => $format) {
+        if ($ext != $findext) {
+            $rmpage = "$raw_data/$page.$findext";
+            if (file_exists($rmpage)) {
+                $escrmpage = escapeshellarg($rmpage);
+                $rmcmd .= " && git rm $escrmpage";
+            }
+        }
+    }
+
     $cmd = '';
     if ($trusted_author) {   // trusted authors push right to main. Untrusted authors generate pull requests.
-        $cmd = "( cd $escrawdata && git checkout main && git add $escpage && git commit -F $escmsgfile --author=$escauthor && git push ) 2>&1";
+        $cmd = "( cd $escrawdata && git checkout main && git add $escpage $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push ) 2>&1";
     } else {
-        $cmd = "( cd $escrawdata && git checkout -b $escbranch && git add $escpage && git commit -F $escmsgfile --author=$escauthor && git push --set-upstream origin $escbranch ) 2>&1";
+        $cmd = "( cd $escrawdata && git checkout -b $escbranch && git add $escpage $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push --set-upstream origin $escbranch ) 2>&1";
     }
 
     unset($output);
@@ -701,7 +740,15 @@ if ($operation == 'view') {  // just serve the existing page.
     authorize_with_github();  // only returns if we are authorized.
     obtain_git_repo_lock();
     $cooked = @file_get_contents("$cooked_data/$document.html");
-    $raw = @file_get_contents("$raw_data/$document.mediawiki");
+
+    $raw = false;
+    foreach ($supported_formats as $ext => $format) {
+        $raw = @file_get_contents("$raw_data/$document.$ext");
+        if ($raw !== false) {
+            break;
+        }
+    }
+
     release_git_repo_lock();
     print_template('edit', [ 'cooked' => ($cooked === false) ? '' : $cooked, 'raw' => ($raw === false) ? '' : $raw ]);
 
@@ -712,8 +759,13 @@ if ($operation == 'view') {  // just serve the existing page.
     if (isset($_POST['newversion'])) {
         $_SESSION['post_newversion'] = $_POST['newversion'];
     }
+
     if (isset($_POST['comment'])) {
         $_SESSION['post_comment'] = $_POST['comment'];
+    }
+
+    if (isset($_POST['format'])) {
+        $_SESSION['post_format'] = $_POST['format'];
     }
 
     force_authorize_with_github();  // only returns if we are authorized.
@@ -722,17 +774,23 @@ if ($operation == 'view') {  // just serve the existing page.
         fail400("New version of page was not posted with this request. <a href='/$document/edit'>Try editing again?</a>");
     }
 
-    if (!isset($_SESSION['post_comment'])) {
-        $_SESSION['post_comment'] = '';
-    }
-
-    make_new_page_version_pr($document, $_SESSION['post_newversion'], $_SESSION['post_comment'], is_trusted_author($_SESSION['github_email']));
+    $data = $_SESSION['post_newversion'];
+    $comment = isset($_SESSION['post_comment']) ? $_SESSION['post_comment'] : '';
+    $format = isset($_SESSION['post_format']) ? $_SESSION['post_format'] : 'md';
+    $trusted = is_trusted_author($_SESSION['github_email']);
+    make_new_page_version($document, $format, $data, $comment, $trusted);
 
     unset($_SESSION['post_newversion']);
     unset($_SESSION['post_comment']);
+    unset($_SESSION['post_format']);
 
 } else if ($operation == 'history') {
-    redirect("$github_url/commits/main/$document.mediawiki");
+    foreach ($supported_formats as $ext => $format) {
+        if (file_exists("$raw_data/$document.$ext")) {
+            redirect("$github_url/commits/main/$document.$ext");
+        }
+    }
+    fail404("No such page '$document'");
 
 } else if ($operation == 'logout') {
     require_session();
