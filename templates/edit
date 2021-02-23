@@ -8,8 +8,11 @@
 Make changes here:<br/>
 <textarea name="newversion" rows='20' cols='80'>@raw@</textarea><br/>
 Describe changes briefly here:<br/>
-<input type="text" name="comment" /><br/>
-Click this when done:<br/>
+<input type="text" name="comment" />
+<select name="format">
+  <option value="md">Markdown</option>
+  <option value="mediawiki">MediaWiki</option>
+</select>
 <input type="submit" name="submit" value="Submit" />
 
 <hr/>

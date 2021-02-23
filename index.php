@@ -537,7 +537,7 @@ function authorize_with_github($force=false)
         $response = call_github_api('https://api.github.com/user', NULL, $_SESSION['github_access_token'], false, false);
 
         if ($response != NULL) {
-            print("GITHUB USER API RESPONSE:\n"); print_r($response);
+            //print("GITHUB USER API RESPONSE:\n"); print_r($response);
 
             if ( !isset($response['login']) ||
                  !isset($response['name']) ||
