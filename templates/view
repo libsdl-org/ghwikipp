@@ -8,10 +8,8 @@
 <hr/>
 [
 <a href='/@page@/edit'>edit</a>
-<!--
 |
 <a href='/@page@/delete'>delete</a>
--->
 |
 <a href='/@page@/history'>history</a>
 ]

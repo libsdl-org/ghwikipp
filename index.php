@@ -8,7 +8,7 @@ $supported_formats = [
 ];
 
 $github_url = "https://github.com/$github_repo_owner/$github_repo";
-$document = NULL;
+$document = NULL;  // !!! FIXME: remove this global.
 $operation = NULL;
 
 putenv("GIT_SSH_COMMAND=ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $ssh_key_fname");
@@ -711,6 +711,91 @@ function make_new_page_version($page, $ext, $newtext, $comment, $trusted_author)
     }
 }
 
+// !!! FIXME: a lot of copy/paste from make_new_page_version
+function delete_page($page, $comment, $trusted_author)
+{
+    global $cooked_data, $raw_data, $git_commit_message_file, $git_committer_user, $github_url;
+    global $github_committer_token, $github_repo_owner, $github_repo, $supported_formats;
+
+    if (!isset($_SESSION['github_access_token'])) {  // should have called authorize_with_github before this!
+        fail503('BUG: This program should have had you authorize with GitHub first!');
+    }
+
+    $comment = str_replace("\r\n", "\n", $comment);
+
+    if ($comment == '') {
+        $comment = 'Deleted.';
+    }
+
+    $escrawdata = escapeshellarg($raw_data);
+
+    obtain_git_repo_lock();
+
+    if (file_put_contents($git_commit_message_file, $comment) != strlen($comment)) {
+        unlink($git_commit_message_file);  // just in case.
+        fail503('Failed to write new content to disk. Please try again later.');
+    }
+
+    $now = time();
+    $branch = "delete-" . $_SESSION['github_user'] . '-' . $now;
+    $author = $_SESSION['github_name'] . ' <' . $_SESSION['github_email'] . '>';
+    $escbranch = escapeshellarg($branch);
+    $escauthor = escapeshellarg($author);
+    $escmsgfile = escapeshellarg($git_commit_message_file);
+
+    $rmcmd = '';
+    foreach ($supported_formats as $findext => $format) {
+        $rmpage = "$page.$findext";
+        if (file_exists("$raw_data/$rmpage")) {
+            $escrmpage = escapeshellarg($rmpage);
+            $rmcmd .= " $escrmpage";
+        }
+    }
+
+    if ($rmcmd == '') {
+        fail400("No such page to delete.");
+    }
+
+    $cmd = '';
+    if ($trusted_author) {   // trusted authors push right to main. Untrusted authors generate pull requests.
+        $cmd = "( cd $escrawdata && git checkout main && git rm $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push ) 2>&1";
+    } else {
+        $cmd = "( cd $escrawdata && git checkout -b $escbranch && git rm $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push --set-upstream origin $escbranch ) 2>&1";
+    }
+
+    unset($output);
+    $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
+    unlink($git_commit_message_file);
+    exec("cd $escrawdata && git checkout main && ( git reset --hard HEAD ; git clean -df )");   // just in case.
+
+    release_git_repo_lock();
+
+    if ($failed) {
+        $str = "\n<br/>Output:<br/>\n<pre>\n";
+        foreach ($output as $l) {
+            $str .= "$l\n";
+        }
+        $str .= "</pre>\n";
+        fail503("Failed to push your changes. Please try again later.$str");
+    }
+
+    $cooked = '[page deleted]';
+
+    if ($trusted_author) {
+        $hash = `cd $escrawdata ; git show-ref -s HEAD`;
+        print_template('pushed_to_main', [ 'hash' => $hash, 'commiturl' => "$github_url/commit/$hash", 'cooked' => $cooked ]);
+    } else {  // generate a pull request so we can review before applying.
+        $response = call_github_api("https://api.github.com/repos/$github_repo_owner/$github_repo/pulls",
+                                    [ 'head' => $branch,
+                                      'base' => 'main',
+                                      'title' => "$page: $comment ($now)",
+                                      'maintainer_can_modify' => true,
+                                      'draft' => false ],
+                                    $github_committer_token, true);
+        print_template('made_pull_request', [ 'branch' => $branch, 'prurl' => $response['html_url'], 'cooked' => $cooked ]);
+    }
+}
+
 function is_trusted_author($author)
 {
     global $trusted_data;
@@ -805,6 +890,26 @@ if ($operation == 'view') {  // just serve the existing page.
     unset($_SESSION['post_newversion']);
     unset($_SESSION['post_comment']);
     unset($_SESSION['post_format']);
+
+} else if ($operation == 'delete') {
+    authorize_with_github();  // only returns if we are authorized.
+    print_template('delete_confirmation');
+
+} else if ($operation == 'postdelete') {
+    // don't lose the changes if GitHub forces a redirect.
+    require_session();
+
+    if (isset($_POST['comment'])) {
+        $_SESSION['post_comment'] = $_POST['comment'];
+    }
+
+    force_authorize_with_github();  // only returns if we are authorized.
+
+    $comment = isset($_SESSION['post_comment']) ? $_SESSION['post_comment'] : '';
+    $trusted = is_trusted_author($_SESSION['github_email']);
+    delete_page($document, $comment, $trusted);
+
+    unset($_SESSION['post_comment']);
 
 } else if ($operation == 'format') {
     // ask the server to cook a string of Markdown/MediaWiki/whatever on the fly for live previews.

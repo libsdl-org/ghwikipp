@@ -1,0 +1,15 @@
+<html><head>
+
+<title>Delete @page@?</title>
+
+<p><h1>Delete @page@?</h1></p>
+<p><h2>Are you sure you want to delete this page?</h2></p>
+<p><form action='/@page@/postdelete' method='post'>
+  <input type="text" placeholder="Reason for deletion" name="comment" />
+  <input type="submit" id="submit" name="submit" value="Confirm deletion" />
+  <a href='/@page@'>[ Cancel ]</a>
+</form>
+</p>
+
+</body></html>
+
