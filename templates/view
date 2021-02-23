@@ -1,4 +1,7 @@
-<html><head><title>@page@</title></head><body>
+<html><head>
+<title>@page@</title>
+<link rel="stylesheet" href="/static_files/pandoc.css" />
+</head><body>
 
 @cooked@
 

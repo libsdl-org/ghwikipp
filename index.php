@@ -3,7 +3,7 @@
 require_once('config.php');
 
 $supported_formats = [
-    'md' => 'markdown_github+backtick_code_blocks',
+    'md' => 'markdown_github',
     'mediawiki' => 'mediawiki'
 ];
 
@@ -219,8 +219,17 @@ function cook_page_from_files($rawfname, $cookedfname)
 
 function cook_page($page)
 {
-    global $raw_data, $cooked_data;
-    return cook_page_from_files("$raw_data/$page.md", "$cooked_data/$page.html");
+    global $raw_data, $cooked_data, $supported_formats;
+
+    $dst = "$cooked_data/$page.html";
+    foreach ($supported_formats as $ext => $format) {
+        $src = "$raw_data/$page.$ext";
+        if (file_exists($src)) {
+            return cook_page_from_files($src, $dst);
+        }
+    }
+
+    fail503("Internal error: Couldn't find page's file to cook!");
 }
 
 function recook_tree($rawbasedir, $cookedbasedir, $dir, &$updated)
@@ -271,7 +280,7 @@ function recook_tree($rawbasedir, $cookedbasedir, $dir, &$updated)
             }
         }
 
-        if (!found) {
+        if (!$found) {
             if (is_dir($dst)) {
                 @rmdir($dst);  // we don't recurse here, since we're recursing above.
             } else {
@@ -672,6 +681,8 @@ function make_new_page_version($page, $ext, $newtext, $comment, $trusted_author)
     $cooked = '';
     if ($trusted_author) {
         $cooked = cook_page($page);  // this is going to recook in a moment when GitHub sends a push notification, but let's keep the state sane.
+    } else {
+        $cooked = cook_string($newtext, $supported_formats[$ext]);
     }
 
     release_git_repo_lock();
@@ -696,7 +707,7 @@ function make_new_page_version($page, $ext, $newtext, $comment, $trusted_author)
                                       'maintainer_can_modify' => true,
                                       'draft' => false ],
                                     $github_committer_token, true);
-        print_template('made_pull_request', [ 'branch' => $branch, 'prurl' => $response['html_url'] ]);
+        print_template('made_pull_request', [ 'branch' => $branch, 'prurl' => $response['html_url'], 'cooked' => $cooked ]);
     }
 }
 
@@ -743,16 +754,25 @@ if ($operation == 'view') {  // just serve the existing page.
     obtain_git_repo_lock();
     $cooked = @file_get_contents("$cooked_data/$document.html");
 
+    $template_vars = array();
+
     $raw = false;
     foreach ($supported_formats as $ext => $format) {
-        $raw = @file_get_contents("$raw_data/$document.$ext");
-        if ($raw !== false) {
-            break;
+        $selectedstr = 'fmt_' . $ext . '_selected';
+        $template_vars[$selectedstr] = '';
+        if ($raw === false) {
+            $raw = @file_get_contents("$raw_data/$document.$ext");
+            if ($raw !== false) {
+                $template_vars[$selectedstr] = 'selected';
+            }
         }
     }
 
     release_git_repo_lock();
-    print_template('edit', [ 'cooked' => ($cooked === false) ? '' : $cooked, 'raw' => ($raw === false) ? '' : $raw ]);
+
+    $template_vars['cooked'] = ($cooked === false) ? '' : $cooked;
+    $template_vars['raw'] = ($raw === false) ? '' : $raw;
+    print_template('edit', $template_vars);
 
 } else if ($operation == 'post') {
     // don't lose the changes if GitHub forces a redirect.
@@ -786,6 +806,28 @@ if ($operation == 'view') {  // just serve the existing page.
     unset($_SESSION['post_comment']);
     unset($_SESSION['post_format']);
 
+} else if ($operation == 'format') {
+    // ask the server to cook a string of Markdown/MediaWiki/whatever on the fly for live previews.
+
+    // see if user has an access token (but don't validate it) to prevent server load; drive-by
+    //  bots can't use this unless they have auth'd with github at some point before, like when
+    //  they clicked the 'edit' link right before they would need this.
+    require_session();
+    if (!isset($_SESSION['github_access_token'])) {
+        fail400("live previews only available when logged into GitHub.");
+    }
+
+    $data = isset($_POST['raw']) ? $_POST['raw'] : '';
+    $format = isset($_POST['format']) ? $_POST['format'] : 'md';
+    $pandoc_format = isset($supported_formats[$format]) ? $supported_formats[$format] : NULL;
+
+    if ($pandoc_format == NULL) {
+        fail400('Unsupported document format');
+    }
+
+    $data = str_replace("\r\n", "\n", $data);
+    print($data == '' ? $data : cook_string($data, $pandoc_format));
+
 } else if ($operation == 'history') {
     foreach ($supported_formats as $ext => $format) {
         if (file_exists("$raw_data/$document.$ext")) {
@@ -803,7 +845,6 @@ if ($operation == 'view') {  // just serve the existing page.
     github_webhook();    // GitHub POSTs here whenever the wiki repo is pushed to.
 
 } else if ($operation == 'recook') {  // !!! FIXME: this should be a recookall, and "recook" should just redo $document.
-
     // !!! FIXME: checking for admins should be a separate function.
     // !!! FIXME:  also: admins shouldn't be hardcoded to my github login.  :)
     force_authorize_with_github();  // only returns if we are authorized.

@@ -1,4 +1,7 @@
-<html><head><title>@page@</title></head><body>
+<html><head>
+<title>@page@</title>
+<link rel="stylesheet" href="/static_files/pandoc.css" />
+</head><body>
 
 <p>Thank you for your edit!</p>
 
@@ -7,7 +10,9 @@
 without the need for peer review. Thank you for
 editing responsibly!</p>
 
-<p>Below is the current state of the page, with your edits.</p>
+<p>Below is the current state of <a href="/@page@/">the page</a>, with your edits.</p>
+
+<p><a href="/@page@/edit">Edit again?</a></p>
 
 <hr/>
 

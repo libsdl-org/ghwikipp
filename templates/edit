@@ -1,25 +1,162 @@
-<html><head><title>Editing @page@</title></head><body>
+<html><head>
 
-@cooked@
+<title>Editing @page@</title>
 
-<hr/>
+<link rel="stylesheet" href="/static_files/pandoc.css" />
 
-<form action='/@page@/post' method='post'>
-Make changes here:<br/>
-<textarea name="newversion" rows='20' cols='80'>@raw@</textarea><br/>
-<input type="text" placeholder="Brief description of changes" name="comment" />
-<select name="format">
-  <option value="md">Markdown</option>
-  <option value="mediawiki">MediaWiki</option>
-</select>
-<input type="submit" name="submit" value="Submit" />
+<style>
+  .tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+  }
 
-<hr/>
+  .tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+  }
 
-[ 
-<a href='https://github.com/@github_user@'><img width='32' height='32' src='@github_avatar@'/> Logged in as @github_name@</a>
-]
+  .tab button:hover {
+    background-color: #ddd;
+  }
+
+  .tab button.active {
+    background-color: #ccc;
+  }
+
+  .tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+  }
+</style>
+
+<script type='text/javascript'>
+  var cooking_timer = undefined;
+  var xhr = undefined;
+  var origtext = undefined;
+  var origformat = undefined;
+
+  function cook_new_rawtext() {
+      cooking_timer = undefined;
+
+      if (xhr !== undefined) {
+          xhr.abort();
+      }
+
+      document.getElementById("cooked").innerHTML = "Cooking...";
+
+      xhr = new XMLHttpRequest();
+      xhr.onload = function() {
+          document.getElementById("cooked").innerHTML = this.responseText;
+          xhr = undefined;
+      };
+      xhr.onerror = function() {
+          document.getElementById("cooked").innerHTML = 'Failed to cook text!';
+          xhr = undefined;
+      }
+
+      var formdata = new FormData();
+      formdata.append("raw", document.getElementById("rawtext").value);
+      formdata.append("format", document.getElementById("format").value);
+      xhr.open("POST", "/@page@/format");
+      xhr.send(formdata);
+  }
+
+  function warn_when_leaving() {
+      return "Are you sure you want to leave this page? Your changes will be lost!";
+  }
+
+  function set_warn_when_leaving(enable) {
+      window.onbeforeunload = enable ? warn_when_leaving : null;
+  }
+
+  function rawtext_needs_recooking() {
+      var changed_from_original = (
+          (document.getElementById("rawtext").value != origtext) ||
+          (document.getElementById("format").value != origformat)
+      );
+
+      set_warn_when_leaving(changed_from_original);
+      document.getElementById("submit").disabled = !changed_from_original;
+
+      if (cooking_timer !== undefined) {
+          clearTimeout(cooking_timer);  // stop a previous input event, so we start the countdown again.
+          cooking_timer = undefined;
+      }
+
+      if (!changed_from_original) {
+          document.getElementById("cooked").innerHTML = origcooked;  // in case this changed _back_.
+      } else {
+          // only fire off an AJAX request if no new input happened for X seconds.
+          cooking_timer = setTimeout(cook_new_rawtext, 500);
+      }
+  }
+
+  // Tab magic comes from https://www.w3schools.com/howto/howto_js_tabs.asp
+  function show_tab(tabname) {
+      var tabcontent = document.getElementsByClassName("tabcontent");
+      for (var i = 0; i < tabcontent.length; i++) {
+          tabcontent[i].style.display = "none";
+      }
+
+      var tabbuttons = document.getElementsByClassName("tabbutton");
+      for (var i = 0; i < tabbuttons.length; i++) {
+          tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
+      }
+
+      document.getElementById(tabname).style.display = "block";
+      document.getElementById("tab_" + tabname).className += " active";
+  }
+
+  window.onload = function() {
+      show_tab('editor');
+      origtext = document.getElementById("rawtext").value;
+      origformat = document.getElementById("format").value;
+      origcooked = document.getElementById("cooked").innerHTML;
+  }
+</script>
+
+</head><body>
+
+<p>
+  <h1>
+    <a href='https://github.com/@github_user@'><img width='32' height='32' src='@github_avatar@' alt='Logged in as @github_name@'/></a>
+    Editing @page@
+  </h1>
+</p>
+
+<p>
+<div class="tab">
+  <button class="tabbutton" id="tab_editor" onclick="show_tab('editor');">Edit</button>
+  <button class="tabbutton" id="tab_preview" onclick="show_tab('preview');">Preview</button>
+</div>
+
+<div id="preview" class="tabcontent">
+  <div id='cooked'>@cooked@</div>
+</div>
+
+<div id="editor" class="tabcontent">
+  <form action='/@page@/post' method='post'>
+    <textarea id='rawtext' name='newversion' rows='20' cols='80' oninput='rawtext_needs_recooking();'>@raw@</textarea><br/>
+    <br/>
+    <input type="text" placeholder="Brief description of changes" name="comment" />
+    <select id="format" name="format" onchange='rawtext_needs_recooking();'>
+      <option value="md" @fmt_md_selected@ >Markdown</option>
+      <option value="mediawiki" @fmt_mediawiki_selected@ >MediaWiki</option>
+    </select>
+    <input type="submit" id="submit" name="submit" value="Submit" onclick="set_warn_when_leaving(false);" disabled />
+    <a href='/@page@'>[ Cancel ]</a>
+  </form>
+</div>
+
+</p>
 
 </body></html>
-
 
