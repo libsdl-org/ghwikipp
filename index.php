@@ -376,6 +376,7 @@ function github_webhook()
 
             $str .= "\nTREE RECOOKED.\n";
 
+            /*
             $cmd = "cd $escrawdata && git log --format='%ae' main";
             unset($output);
             $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
@@ -405,6 +406,7 @@ function github_webhook()
                 }
                 $str .= "\n";
             }
+            */
         }
     }
 
@@ -494,7 +496,7 @@ function authorize_with_github($force=false)
 {
     global $github_oauth_clientid;
     global $github_oauth_secret;
-    global $blocked_data;
+    global $blocked_data, $trusted_data;
 
     require_session();
 
@@ -609,6 +611,7 @@ function authorize_with_github($force=false)
             $_SESSION['github_name'] = $response['name'];
             $_SESSION['github_avatar'] = isset($response['avatar_url']) ? $response['avatar_url'] : '';
             $_SESSION['is_blocked'] = file_exists("$blocked_data/" . $response['id']);
+            $_SESSION['is_trusted'] = file_exists("$trusted_data/" . $response['id']);
 
             //print("SESSION:\n"); print_r($_SESSION);
 
@@ -642,6 +645,7 @@ function authorize_with_github($force=false)
     unset($_SESSION['expected_ipaddr']);
     unset($_SESSION['last_auth_time']);
     unset($_SESSION['is_blocked']);
+    unset($_SESSION['is_trusted']);
 
     // !!! FIXME: no idea if this is a good idea.
     $_SESSION['github_oauth_state'] = hash('sha256', microtime(TRUE) . rand() . $_SERVER['REMOTE_ADDR']);
@@ -749,7 +753,8 @@ function make_new_page_version($page, $ext, $newtext, $comment, $trusted_author)
         print_template('pushed_to_main', [ 'hash' => $hash, 'commiturl' => "$github_url/commit/$hash", 'cooked' => $cooked ]);
     } else {  // generate a pull request so we can review before applying.
         $user = $_SESSION['github_user'];
-        $body = "If this user should be blocked from further edits, an admin should go to $base_url/$user/block";
+        $body = "If this user should be blocked from further edits, an admin should go to $base_url/$user/block\n" .
+                "If this user should be trusted to make direct pushes to main, without a pull request, an admin should go to $base_url/$user/trust\n";
         $response = call_github_api("https://api.github.com/repos/$github_repo_owner/$github_repo/pulls",
                                     [ 'head' => $branch,
                                       'base' => 'main',
@@ -835,7 +840,8 @@ function delete_page($page, $comment, $trusted_author)
         print_template('pushed_to_main', [ 'hash' => $hash, 'commiturl' => "$github_url/commit/$hash", 'cooked' => $cooked ]);
     } else {  // generate a pull request so we can review before applying.
         $user = $_SESSION['github_user'];
-        $body = "If this user should be blocked from further edits, an admin should go to $base_url/$user/block";
+        $body = "If this user should be blocked from further edits, an admin should go to $base_url/$user/block\n" .
+                "If this user should be trusted to make direct pushes to main, without a pull request, an admin should go to $base_url/$user/trust\n";
         $response = call_github_api("https://api.github.com/repos/$github_repo_owner/$github_repo/pulls",
                                     [ 'head' => $branch,
                                       'base' => 'main',
@@ -848,10 +854,10 @@ function delete_page($page, $comment, $trusted_author)
     }
 }
 
-function is_trusted_author($author_email)
+function is_trusted_author($id)
 {
     global $trusted_data;
-    return file_exists("$trusted_data/$author_email");
+    return file_exists("$trusted_data/$id");
 }
 
 
@@ -865,9 +871,9 @@ function must_be_admin()
     }
 }
 
-function block_user($user, $is_block)
+function perform_action_on_user($action, $statedir, $user, $is_do)  // !$is_do == undo.
 {
-    global $blocked_data, $github_committer_token;
+    global $github_committer_token;
 
     must_be_admin();
 
@@ -879,20 +885,40 @@ function block_user($user, $is_block)
         fail503('Bogus user id from GitHub API. Try again later.');
     }
 
-    $fname = "$blocked_data/$id";
-    if ($is_block) {
-        $str = "$user, blocked by " . $_SESSION['github_user'] . "\n";
-        @mkdir($blocked_data);  // don't care if this fails, it's probably EEXIST, and we'll catch the file_put_contents failure anyhow.
+    $fname = "$statedir/$id";
+    if ($is_do) {
+        $str = "$user, {$action}ed by " . $_SESSION['github_user'] . "\n";
+        @mkdir($statedir);  // don't care if this fails, it's probably EEXIST, and we'll catch the file_put_contents failure anyhow.
         if (file_put_contents($fname, $str) != strlen($str)) {
-            fail503('Failed to mark user as blocked. Please try again later.');
+            fail503("Failed to mark user as {$action}ed. Please try again later.");
         }
     } else {
         if (file_exists($fname) && !unlink($fname)) {
-            fail503('Failed to mark user as unblocked. Please try again later.');
+            fail503("Failed to mark user as un{$action}ed. Please try again later.");
         }
     }
 
-    print_template('block_complete', [ 'action' => $is_block ? 'blocked' : 'unblocked', 'user' => $user, 'username' => $response['name'], 'user_avatar' => $response['avatar_url'] ]);
+    print_template('action_on_user_complete', [
+        'action' => $is_do ? "{$action}ed" : "un{$action}ed",
+        'revaction' => $action,
+        'user' => $user,
+        'username' => $response['name'],
+        'user_avatar' => $response['avatar_url']
+    ]);
+}
+
+function confirm_action_on_user($action, $user, $statedir, $explanation)
+{
+    must_be_admin();  // only returns if we are an admin.
+    $response = call_github_api("https://api.github.com/users/$user", NULL, $github_committer_token);
+    $is_do = file_exists("$statedir/" . $response['id']);
+    print_template('action_on_user_confirmation', [
+        'currently' => $is_do ? "{$action}ed" : "un{$action}ed",
+        'action' => $is_do ? "un{$action}" : $action,
+        'user' => $user, 'username' => $response['name'],
+        'user_avatar' => $response['avatar_url'],
+        'explanation' => $explanation
+    ]);
 }
 
 
@@ -975,7 +1001,7 @@ if ($operation == 'view') {  // just serve the existing page.
     $data = $_SESSION['post_newversion'];
     $comment = isset($_SESSION['post_comment']) ? $_SESSION['post_comment'] : '';
     $format = isset($_SESSION['post_format']) ? $_SESSION['post_format'] : 'md';
-    $trusted = is_trusted_author($_SESSION['github_email']);
+    $trusted = is_trusted_author($_SESSION['github_id']);
     make_new_page_version($document, $format, $data, $comment, $trusted);
 
     unset($_SESSION['post_newversion']);
@@ -995,7 +1021,7 @@ if ($operation == 'view') {  // just serve the existing page.
     }
 
     $comment = isset($_SESSION['post_comment']) ? $_SESSION['post_comment'] : '';
-    $trusted = is_trusted_author($_SESSION['github_email']);
+    $trusted = is_trusted_author($_SESSION['github_id']);
     delete_page($document, $comment, $trusted);
 
     unset($_SESSION['post_comment']);
@@ -1031,13 +1057,16 @@ if ($operation == 'view') {  // just serve the existing page.
     fail404("No such page '$document'");
 
 } else if ($operation == 'block') {
-    must_be_admin();
-    $response = call_github_api("https://api.github.com/users/$document", NULL, $github_committer_token);
-    $is_block = file_exists("$blocked_data/" . $response['id']);
-    print_template('block_confirmation', [ 'currently' => $is_block ? 'blocked' : 'unblocked', 'action' => $is_block ? 'unblock' : 'block', 'user' => $document, 'username' => $response['name'], 'user_avatar' => $response['avatar_url'] ]);
+    confirm_action_on_user($operation, $document, $blocked_data, 'Blocked users may not make edits to the wiki, but may still read it.');
 
 } else if (($operation == 'block_confirm') || ($operation == 'unblock_confirm')) {
-    block_user($document, ($operation == 'block_confirm'));
+    perform_action_on_user('block', $blocked_data, $document, ($operation == 'block_confirm'));
+
+} else if ($operation == 'trust') {
+    confirm_action_on_user($operation, $document, $trusted_data, "Trusted users' edits are pushed directly to <b>main</b> without generating pull requests.");
+
+} else if (($operation == 'trust_confirm') || ($operation == 'untrust_confirm')) {
+    perform_action_on_user('trust', $trusted_data, $document, ($operation == 'trust_confirm'));
 
 } else if ($operation == 'logout') {
     require_session();
