@@ -168,7 +168,7 @@ function cook_string($str, $from_pandoc_format)
         1 => array('pipe', 'w'),  // stdout
     );
 
-    $proc = proc_open([ 'pandoc', '-f', $from_pandoc_format, '-t', 'html', '--toc' ], $descriptorspec, $pipes);
+    $proc = proc_open([ 'pandoc', '-f', $from_pandoc_format, '-t', 'html', '--toc', '--lua-filter=./pandoc-filter.lua' ], $descriptorspec, $pipes);
 
     $retval = '';
     if (is_resource($proc)) {
