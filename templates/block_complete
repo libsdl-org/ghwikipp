@@ -1,0 +1,10 @@
+<html><head>
+<title>@@user@ @action@</title>
+</head><body>
+
+<p>@username@, <a href='https://github.com/@user@'>@@user@</a> <img src='@user_avatar@' width='32' height='32'/>, has been <b>@action@</b>.</p>
+
+<p>If this was in error, you can reverse it <a href="/@user@/block">here</a>.</p>
+
+</body></html>
+

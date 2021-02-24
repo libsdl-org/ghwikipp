@@ -1,0 +1,16 @@
+<html><head>
+<title>@action@ @@user@?</title>
+</head><body>
+
+<p>@username@, <a href='https://github.com/@user@'>@@user@</a> <img src='@user_avatar@' width='32' height='32'/>, is currently <b>@currently@</b>.</p>
+
+<p>Would you like to <b>@action@</b> this user? Blocked users may not make edits to the wiki, but may still read it.</p>
+
+<p><form action='/@user@/@action@_confirm' method='post'>
+  <input type="submit" id="submit" name="submit" value="DO IT." />
+</form></p>
+
+<p><a href="/">Or just go home instead.</a></p>
+
+</body></html>
+

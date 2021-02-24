@@ -82,13 +82,14 @@ function get_template($template, $vars=NULL, $safe_to_fail=true)
 
     // replace any @varname@ with the value of that variable.
     return preg_replace_callback(
-               '/\@(.*?)\@/',
+               '/\@([a-z_]+)\@/',
                function ($matches) use ($vars, $document, $operation) {
                    $key = $matches[1];
                    if (($vars != NULL) && isset($vars[$key])) { return $vars[$key]; }
                    else if ($key == 'page') { return $document; }
                    else if ($key == 'operation') { return $operation; }
                    else if ($key == 'url') { return $_SERVER['PHP_SELF']; }
+                   else if ($key == 'github_id') { return isset($_SESSION['github_id']) ? $_SESSION['github_id'] : '[not logged in]'; }
                    else if ($key == 'github_user') { return isset($_SESSION['github_user']) ? $_SESSION['github_user'] : '[not logged in]'; }
                    else if ($key == 'github_name') { return isset($_SESSION['github_name']) ? $_SESSION['github_name'] : '[not logged in]'; }
                    else if ($key == 'github_email') { return isset($_SESSION['github_email']) ? $_SESSION['github_email'] : '[not logged in]'; }
@@ -488,6 +489,7 @@ function authorize_with_github($force=false)
 {
     global $github_oauth_clientid;
     global $github_oauth_secret;
+    global $blocked_data;
 
     require_session();
 
@@ -504,15 +506,21 @@ function authorize_with_github($force=false)
     //  though.
 
     if ( !$force &&
+         isset($_SESSION['github_id']) &&
          isset($_SESSION['github_user']) &&
          isset($_SESSION['github_email']) &&
          isset($_SESSION['github_name']) &&
          isset($_SESSION['github_access_token']) &&
          isset($_SESSION['last_auth_time']) &&
          isset($_SESSION['expected_ipaddr']) &&
+         isset($_SESSION['is_blocked']) &&
          ( (time() - $_SESSION['last_auth_time']) < (60 * 60) ) &&
          ($_SESSION['expected_ipaddr'] == $_SERVER['REMOTE_ADDR']) ) {
         //print("ALREADY LOGGED IN\n");
+
+        if ($_SESSION['is_blocked']) {
+            fail400('Sorry, but you are blocked from this wiki.');
+        }
         return;  // we're already logged in.
 
     } else if (isset($_REQUEST['code'])) {  // this is probably a redirect back from GitHub's OAuth page.
@@ -559,14 +567,18 @@ function authorize_with_github($force=false)
 
             $_SESSION['expected_ipaddr'] = $_SERVER['REMOTE_ADDR'];
             $_SESSION['last_auth_time'] = time();
+            $_SESSION['github_id'] = $response['id'];
             $_SESSION['github_user'] = $response['login'];
             $_SESSION['github_email'] = $response['email'];
             $_SESSION['github_name'] = $response['name'];
             $_SESSION['github_avatar'] = isset($response['avatar_url']) ? $response['avatar_url'] : '';
+            $_SESSION['is_blocked'] = file_exists("$blocked_data/" . $response['id']);
 
             //print("SESSION:\n"); print_r($_SESSION);
 
-            // !!! FIXME: see if we're blocked, and drop session immediately and fail.
+            if ($_SESSION['is_blocked']) {
+                fail400('Sorry, but you are blocked from this wiki.');
+            }
 
             //print("AUTH TO GITHUB VALID AND READY\n");
             // logged in, verified, and good to go!
@@ -585,6 +597,7 @@ function authorize_with_github($force=false)
     // we're starting authorization from scratch.
 
     // kill any lingering state.
+    unset($_SESSION['github_id']);
     unset($_SESSION['github_user']);
     unset($_SESSION['github_email']);
     unset($_SESSION['github_name']);
@@ -592,6 +605,7 @@ function authorize_with_github($force=false)
     unset($_SESSION['github_access_token']);
     unset($_SESSION['expected_ipaddr']);
     unset($_SESSION['last_auth_time']);
+    unset($_SESSION['is_blocked']);
 
     // !!! FIXME: no idea if this is a good idea.
     $_SESSION['github_oauth_state'] = hash('sha256', microtime(TRUE) . rand() . $_SERVER['REMOTE_ADDR']);
@@ -615,12 +629,10 @@ function force_authorize_with_github()
 
 function make_new_page_version($page, $ext, $newtext, $comment, $trusted_author)
 {
-    global $raw_data, $git_commit_message_file, $git_committer_user, $github_url;
+    global $raw_data, $git_commit_message_file, $git_committer_user, $github_url, $base_url;
     global $github_committer_token, $github_repo_owner, $github_repo, $supported_formats;
 
-    if (!isset($_SESSION['github_access_token'])) {  // should have called authorize_with_github before this!
-        fail503('BUG: This program should have had you authorize with GitHub first!');
-    }
+    force_authorize_with_github();  // only returns if we are authorized.
 
     $newtext = str_replace("\r\n", "\n", $newtext);
     $comment = str_replace("\r\n", "\n", $comment);
@@ -700,10 +712,13 @@ function make_new_page_version($page, $ext, $newtext, $comment, $trusted_author)
         $hash = `cd $escrawdata ; git show-ref -s HEAD`;
         print_template('pushed_to_main', [ 'hash' => $hash, 'commiturl' => "$github_url/commit/$hash", 'cooked' => $cooked ]);
     } else {  // generate a pull request so we can review before applying.
+        $user = $_SESSION['github_user'];
+        $body = "If this user should be blocked from further edits, an admin should go to $base_url/$user/block";
         $response = call_github_api("https://api.github.com/repos/$github_repo_owner/$github_repo/pulls",
                                     [ 'head' => $branch,
                                       'base' => 'main',
                                       'title' => "$page: $comment ($now)",
+                                      'body' => $body,
                                       'maintainer_can_modify' => true,
                                       'draft' => false ],
                                     $github_committer_token, true);
@@ -715,11 +730,9 @@ function make_new_page_version($page, $ext, $newtext, $comment, $trusted_author)
 function delete_page($page, $comment, $trusted_author)
 {
     global $cooked_data, $raw_data, $git_commit_message_file, $git_committer_user, $github_url;
-    global $github_committer_token, $github_repo_owner, $github_repo, $supported_formats;
+    global $github_committer_token, $github_repo_owner, $github_repo, $supported_formats, $base_url;
 
-    if (!isset($_SESSION['github_access_token'])) {  // should have called authorize_with_github before this!
-        fail503('BUG: This program should have had you authorize with GitHub first!');
-    }
+    force_authorize_with_github();  // only returns if we are authorized.
 
     $comment = str_replace("\r\n", "\n", $comment);
 
@@ -785,10 +798,13 @@ function delete_page($page, $comment, $trusted_author)
         $hash = `cd $escrawdata ; git show-ref -s HEAD`;
         print_template('pushed_to_main', [ 'hash' => $hash, 'commiturl' => "$github_url/commit/$hash", 'cooked' => $cooked ]);
     } else {  // generate a pull request so we can review before applying.
+        $user = $_SESSION['github_user'];
+        $body = "If this user should be blocked from further edits, an admin should go to $base_url/$user/block";
         $response = call_github_api("https://api.github.com/repos/$github_repo_owner/$github_repo/pulls",
                                     [ 'head' => $branch,
                                       'base' => 'main',
                                       'title' => "$page: $comment ($now)",
+                                      'body' => $body,
                                       'maintainer_can_modify' => true,
                                       'draft' => false ],
                                     $github_committer_token, true);
@@ -796,10 +812,51 @@ function delete_page($page, $comment, $trusted_author)
     }
 }
 
-function is_trusted_author($author)
+function is_trusted_author($author_email)
 {
     global $trusted_data;
-    return file_exists("$trusted_data/$author");
+    return file_exists("$trusted_data/$author_email");
+}
+
+
+function must_be_admin()
+{
+    global $admin_data;
+    force_authorize_with_github();  // only returns if we are authorized.
+    $user = $_SESSION['github_user'];
+    if (!file_exists("$admin_data/$user")) {
+        fail400('This is only available to admins.');
+    }
+}
+
+function block_user($user, $is_block)
+{
+    global $blocked_data, $github_committer_token;
+
+    must_be_admin();
+
+    $response = call_github_api("https://api.github.com/users/$user", NULL, $github_committer_token);
+
+    // we block by user id number, not username, so the user can't evade blocking by renaming the account.
+    $id = isset($response['id']) ? $response['id'] : '';
+    if ($id == '') {
+        fail503('Bogus user id from GitHub API. Try again later.');
+    }
+
+    $fname = "$blocked_data/$id";
+    if ($is_block) {
+        $str = "$user, blocked by " . $_SESSION['github_user'] . "\n";
+        @mkdir($blocked_data);  // don't care if this fails, it's probably EEXIST, and we'll catch the file_put_contents failure anyhow.
+        if (file_put_contents($fname, $str) != strlen($str)) {
+            fail503('Failed to mark user as blocked. Please try again later.');
+        }
+    } else {
+        if (file_exists($fname) && !unlink($fname)) {
+            fail503('Failed to mark user as unblocked. Please try again later.');
+        }
+    }
+
+    print_template('block_complete', [ 'action' => $is_block ? 'blocked' : 'unblocked', 'user' => $user, 'username' => $response['name'], 'user_avatar' => $response['avatar_url'] ]);
 }
 
 
@@ -875,8 +932,6 @@ if ($operation == 'view') {  // just serve the existing page.
         $_SESSION['post_format'] = $_POST['format'];
     }
 
-    force_authorize_with_github();  // only returns if we are authorized.
-
     if (!isset($_SESSION['post_newversion'])) {
         fail400("New version of page was not posted with this request. <a href='/$document/edit'>Try editing again?</a>");
     }
@@ -902,8 +957,6 @@ if ($operation == 'view') {  // just serve the existing page.
     if (isset($_POST['comment'])) {
         $_SESSION['post_comment'] = $_POST['comment'];
     }
-
-    force_authorize_with_github();  // only returns if we are authorized.
 
     $comment = isset($_SESSION['post_comment']) ? $_SESSION['post_comment'] : '';
     $trusted = is_trusted_author($_SESSION['github_email']);
@@ -941,6 +994,15 @@ if ($operation == 'view') {  // just serve the existing page.
     }
     fail404("No such page '$document'");
 
+} else if ($operation == 'block') {
+    must_be_admin();
+    $response = call_github_api("https://api.github.com/users/$document", NULL, $github_committer_token);
+    $is_block = file_exists("$blocked_data/" . $response['id']);
+    print_template('block_confirmation', [ 'currently' => $is_block ? 'blocked' : 'unblocked', 'action' => $is_block ? 'unblock' : 'block', 'user' => $document, 'username' => $response['name'], 'user_avatar' => $response['avatar_url'] ]);
+
+} else if (($operation == 'block_confirm') || ($operation == 'unblock_confirm')) {
+    block_user($document, ($operation == 'block_confirm'));
+
 } else if ($operation == 'logout') {
     require_session();
     $_SESSION = array();  // nuke everything.
@@ -950,12 +1012,7 @@ if ($operation == 'view') {  // just serve the existing page.
     github_webhook();    // GitHub POSTs here whenever the wiki repo is pushed to.
 
 } else if ($operation == 'recook') {  // !!! FIXME: this should be a recookall, and "recook" should just redo $document.
-    // !!! FIXME: checking for admins should be a separate function.
-    // !!! FIXME:  also: admins shouldn't be hardcoded to my github login.  :)
-    force_authorize_with_github();  // only returns if we are authorized.
-    if ($_SESSION['github_user'] != 'icculus') {
-        fail400('Not available to you.');
-    }
+    must_be_admin();
 
     header('Content-Type: text/plain; charset=utf-8');
     $str = "\nRECOOKING...\n\n";
