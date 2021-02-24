@@ -543,7 +543,7 @@ function authorize_with_github($force=false)
             'code' => $_REQUEST['code']
         ]);
 
-        //print_r($response);
+        //print("\n<pre>\n"); print_r($response); print("\n</pre>\n\n");
 
         if (!isset($response['access_token'])) {
             fail503("GitHub OAuth didn't provide an access token! Please try again later.");
@@ -561,20 +561,47 @@ function authorize_with_github($force=false)
         $response = call_github_api('https://api.github.com/user', NULL, $_SESSION['github_access_token'], false, false);
 
         if ($response != NULL) {
-            //print("GITHUB USER API RESPONSE:\n"); print_r($response);
+            //print("\n<pre>\nGITHUB USER API RESPONSE:\n"); print_r($response); print("\n</pre>\n\n");
 
-            if ( !isset($response['login']) ||
-                 !isset($response['name']) ||
-                 !isset($response['email']) ) {
+            if ( !isset($response['id']) ||
+                 !isset($response['login']) ||
+                 !isset($response['name']) ) {
                 unset($_SESSION['github_access_token']);
-                fail503("GitHub didn't tell us everything we need to know about you. Please try again later.");
+                fail503("GitHub didn't tell us everything we need to know about you to use this wiki. Please try again later.");
             }
+
+            // Find a public email, favoring the one marked "primary" if possible.
+            $emailresponse = call_github_api('https://api.github.com/user/emails', NULL, $_SESSION['github_access_token'], false, false);
+            //print("\n<pre>\nGITHUB USER EMAIL API RESPONSE:\n"); print_r($emailresponse); print("\n</pre>\n\n");
+
+            $bestemail = NULL;
+            if (is_array($emailresponse)) {
+                foreach ($emailresponse as $e) {
+                    if (!isset($e['email'])) { continue; }
+                    if (!isset($e['visibility'])) { continue; }
+                    if ($e['visibility'] != 'public') { continue; }
+                    if ($bestemail == NULL) { $bestemail = $e['email']; }
+                    if ($e == NULL) { $bestemail = $e['email']; }
+                    if (isset($e['primary']) && (((int) $e['primary']) == 1)) { $bestemail = $e['email']; }
+                }
+            }
+
+            if ($bestemail == NULL) {
+                if (isset($response['email'])) {  // take the one from the initial user request, which isn't always set for some reason.
+                    $bestemail = $response['email'];
+                } else {
+                    unset($_SESSION['github_access_token']);
+                    fail503("GitHub won't tell us your email address, which we need to make edits to the wiki. Check your settings on GitHub?");
+                }
+            }
+
+            //print("\n<pre>\nWe think your email address is $bestemail\n</pre>\n\n");
 
             $_SESSION['expected_ipaddr'] = $_SERVER['REMOTE_ADDR'];
             $_SESSION['last_auth_time'] = time();
             $_SESSION['github_id'] = $response['id'];
             $_SESSION['github_user'] = $response['login'];
-            $_SESSION['github_email'] = $response['email'];
+            $_SESSION['github_email'] = $bestemail;
             $_SESSION['github_name'] = $response['name'];
             $_SESSION['github_avatar'] = isset($response['avatar_url']) ? $response['avatar_url'] : '';
             $_SESSION['is_blocked'] = file_exists("$blocked_data/" . $response['id']);
