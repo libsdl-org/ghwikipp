@@ -1,6 +1,7 @@
 cooked
 raw
 trusted
+admins
 config.php
 git_repo_lock
 tmp_commit_message.txt

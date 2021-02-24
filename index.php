@@ -313,7 +313,7 @@ function validate_webhook_signature($gitHubSignatureHeader, $payload)
 
 function github_webhook()
 {
-    global $raw_data, $cooked_data, $trusted_data, $trust_threshold;
+    global $raw_data, $cooked_data;
 
     header('Content-Type: text/plain; charset=utf-8');
 
@@ -375,38 +375,6 @@ function github_webhook()
             }
 
             $str .= "\nTREE RECOOKED.\n";
-
-            /*
-            $cmd = "cd $escrawdata && git log --format='%ae' main";
-            unset($output);
-            $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
-            if ($failed) {
-                $str .= "FAILED TO GET AUTHOR LIST, NOT UPDATING TRUSTED USERS\n";
-            } else {
-                $users = array();
-                foreach ($output as $l) {
-                    if (!isset($users[$l])) {
-                        $users[$l] = 1;
-                    } else {
-                        $users[$l]++;
-                    }
-                }
-
-                $str .= "Author commit counts:\n";
-                foreach ($users as $u => $num) {
-                    $trusted = '';
-                    if ($num >= $trust_threshold) {
-                        $trusted = ' [TRUSTED]';
-                        $f = "$trusted_data/$u";
-                        if (!file_exists($f)) {
-                            file_put_contents($f, '');
-                        }
-                    }
-                    $str .= "    $u: $num$trusted\n";
-                }
-                $str .= "\n";
-            }
-            */
         }
     }
 
