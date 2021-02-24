@@ -528,12 +528,16 @@ function authorize_with_github($force=false)
         }
         return;  // we're already logged in.
 
-    } else if (isset($_REQUEST['code'])) {  // this is probably a redirect back from GitHub's OAuth page.
+    // if there's a "code" arg, this is probably a redirect back from GitHub's OAuth page.
+    //  make sure this isn't the user just reloading the page before using it again, as that will fail; we'll reauth to get a new code in that case.
+    } else if ( isset($_REQUEST['code']) && (!isset($_SESSION['github_last_used_oauth_code']) || ($_SESSION['github_last_used_oauth_code'] != $_REQUEST['code'])) ) {
         if ( !isset($_REQUEST['state']) || !isset($_SESSION['github_oauth_state']) ) {
             fail400('GitHub authorization appears to be confused, please try again.');
         } else if ($_SESSION['github_oauth_state'] != $_REQUEST['state']) {
             fail400('This appears to be a bogus attempt to authorize with GitHub. If in error, please try again.');
         }
+
+        $_SESSION['github_last_used_oauth_code'] = $_REQUEST['code'];
 
         $tokenurl = 'https://github.com/login/oauth/access_token';
         $response = call_github_api($tokenurl, [
