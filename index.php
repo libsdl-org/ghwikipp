@@ -464,7 +464,7 @@ function authorize_with_github($force=false)
 {
     global $github_oauth_clientid;
     global $github_oauth_secret;
-    global $blocked_data, $trusted_data;
+    global $blocked_data, $trusted_data, $admin_data, $always_admin;
 
     require_session();
 
@@ -489,6 +489,8 @@ function authorize_with_github($force=false)
          isset($_SESSION['last_auth_time']) &&
          isset($_SESSION['expected_ipaddr']) &&
          isset($_SESSION['is_blocked']) &&
+         isset($_SESSION['is_trusted']) &&
+         isset($_SESSION['is_admin']) &&
          ( (time() - $_SESSION['last_auth_time']) < (60 * 60) ) &&
          ($_SESSION['expected_ipaddr'] == $_SERVER['REMOTE_ADDR']) ) {
         //print("ALREADY LOGGED IN\n");
@@ -518,7 +520,6 @@ function authorize_with_github($force=false)
         ]);
 
         //print("\n<pre>\n"); print_r($response); print("\n</pre>\n\n");
-
         if (!isset($response['access_token'])) {
             fail503("GitHub OAuth didn't provide an access token! Please try again later.");
         }
@@ -580,6 +581,21 @@ function authorize_with_github($force=false)
             $_SESSION['github_avatar'] = isset($response['avatar_url']) ? $response['avatar_url'] : '';
             $_SESSION['is_blocked'] = file_exists("$blocked_data/" . $response['id']);
             $_SESSION['is_trusted'] = file_exists("$trusted_data/" . $response['id']);
+            $_SESSION['is_admin'] = file_exists("$admin_data/" . $response['id']);
+
+            if (!$_SESSION['is_admin'] && isset($always_admin)) {
+                $thisuser = $_SESSION['github_user'];
+                if (is_array($always_admin)) {
+                    foreach ($always_admin as $u) {
+                        if ($u == $thisuser) {
+                            $_SESSION['is_admin'] = 1;
+                            break;
+                        }
+                    }
+                } else {
+                    $_SESSION['is_admin'] = ($thisuser == $always_admin);
+                }
+            }
 
             //print("SESSION:\n"); print_r($_SESSION);
 
@@ -614,6 +630,7 @@ function authorize_with_github($force=false)
     unset($_SESSION['last_auth_time']);
     unset($_SESSION['is_blocked']);
     unset($_SESSION['is_trusted']);
+    unset($_SESSION['is_admin']);
 
     // !!! FIXME: no idea if this is a good idea.
     $_SESSION['github_oauth_state'] = hash('sha256', microtime(TRUE) . rand() . $_SERVER['REMOTE_ADDR']);
@@ -831,10 +848,8 @@ function is_trusted_author($id)
 
 function must_be_admin()
 {
-    global $admin_data;
     force_authorize_with_github();  // only returns if we are authorized.
-    $user = $_SESSION['github_user'];
-    if (!file_exists("$admin_data/$user")) {
+    if (!$_SESSION['is_admin']) {
         fail400('This is only available to admins.');
     }
 }
@@ -1035,6 +1050,12 @@ if ($operation == 'view') {  // just serve the existing page.
 
 } else if (($operation == 'trust_confirm') || ($operation == 'untrust_confirm')) {
     perform_action_on_user('trust', $trusted_data, $document, ($operation == 'trust_confirm'));
+
+} else if ($operation == 'admin') {
+    confirm_action_on_user($operation, $document, $admin_data, "Admins can change wiki and user settings, and push changes directly to <b>main</b> without generating pull requests.");
+
+} else if (($operation == 'admin_confirm') || ($operation == 'unadmin_confirm')) {
+    perform_action_on_user('admin', $admin_data, $document, ($operation == 'admin_confirm'));
 
 } else if ($operation == 'logout') {
     require_session();
