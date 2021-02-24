@@ -342,64 +342,69 @@ function github_webhook()
     $str .= "GITHUB EVENT: $event\n";
 
     if ($event == 'push') {   // we only care about push events.
-        obtain_git_repo_lock();
-        $escrawdata = escapeshellarg($raw_data);
-        $cmd = "( cd $escrawdata && git pull --rebase ) 2>&1";
-        unset($output);
-        $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
-
-        $str .= "\nOUTPUT of '$cmd':\n\n";
-        foreach ($output as $l) {
-            $str .= "    $l\n";
-        }
-
-        if ($failed) {
-            fail503("$str\nGIT PULL FAILED!\n", 'fail_plaintext');
-        }
-
-        $updated = array();
-        $failed = recook_tree($raw_data, $cooked_data, '', $updated);
-
-        $str .= "\n";
-        foreach ($updated as $f) {
-            $str .= "$f\n";
-        }
-        $str .= "\n";
-
-        if ($failed) {
-            fail503("$str\nFAILED TO RECOOK DATA!\n", 'fail_plaintext');
-        }
-
-        $str .= "\nTREE RECOOKED.\n";
-
-        $cmd = "cd $escrawdata && git log --format='%ae' main";
-        unset($output);
-        $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
-        if ($failed) {
-            $str .= "FAILED TO GET AUTHOR LIST, NOT UPDATING TRUSTED USERS\n";
+        $json = json_decode($payload, TRUE);
+        if ($json['ref'] != 'refs/heads/main') {
+            $str .= "PUSH EVENT ISN'T FOR MAIN BRANCH, IGNORING.\n";  // probably a topic branch we just pushed for a pull request.
         } else {
-            $users = array();
+            obtain_git_repo_lock();
+            $escrawdata = escapeshellarg($raw_data);
+            $cmd = "( cd $escrawdata && git pull --rebase ) 2>&1";
+            unset($output);
+            $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
+
+            $str .= "\nOUTPUT of '$cmd':\n\n";
             foreach ($output as $l) {
-                if (!isset($users[$l])) {
-                    $users[$l] = 1;
-                } else {
-                    $users[$l]++;
-                }
+                $str .= "    $l\n";
             }
 
-            $str .= "Author commit counts:\n";
-            foreach ($users as $u => $num) {
-                $trusted = '';
-                if ($num >= $trust_threshold) {
-                    $trusted = ' [TRUSTED]';
-                    $f = "$trusted_data/$u";
-                    if (!file_exists($f)) {
-                        file_put_contents($f, '');
-                    }
-                }
-                $str .= "    $u: $num$trusted\n";
+            if ($failed) {
+                fail503("$str\nGIT PULL FAILED!\n", 'fail_plaintext');
+            }
+
+            $updated = array();
+            $failed = recook_tree($raw_data, $cooked_data, '', $updated);
+
+            $str .= "\n";
+            foreach ($updated as $f) {
+                $str .= "$f\n";
             }
             $str .= "\n";
+
+            if ($failed) {
+                fail503("$str\nFAILED TO RECOOK DATA!\n", 'fail_plaintext');
+            }
+
+            $str .= "\nTREE RECOOKED.\n";
+
+            $cmd = "cd $escrawdata && git log --format='%ae' main";
+            unset($output);
+            $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
+            if ($failed) {
+                $str .= "FAILED TO GET AUTHOR LIST, NOT UPDATING TRUSTED USERS\n";
+            } else {
+                $users = array();
+                foreach ($output as $l) {
+                    if (!isset($users[$l])) {
+                        $users[$l] = 1;
+                    } else {
+                        $users[$l]++;
+                    }
+                }
+
+                $str .= "Author commit counts:\n";
+                foreach ($users as $u => $num) {
+                    $trusted = '';
+                    if ($num >= $trust_threshold) {
+                        $trusted = ' [TRUSTED]';
+                        $f = "$trusted_data/$u";
+                        if (!file_exists($f)) {
+                            file_put_contents($f, '');
+                        }
+                    }
+                    $str .= "    $u: $num$trusted\n";
+                }
+                $str .= "\n";
+            }
         }
     }
 
