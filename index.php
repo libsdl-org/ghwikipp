@@ -652,7 +652,7 @@ function force_authorize_with_github()
     authorize_with_github(true);
 }
 
-function make_new_page_version($page, $ext, $newtext, $comment, $trusted_author)
+function make_new_page_version($page, $ext, $newtext, $comment)
 {
     global $raw_data, $git_commit_message_file, $git_committer_user, $github_url, $base_url;
     global $github_committer_token, $github_repo_owner, $github_repo, $supported_formats;
@@ -704,7 +704,8 @@ function make_new_page_version($page, $ext, $newtext, $comment, $trusted_author)
     }
 
     $cmd = '';
-    if ($trusted_author) {   // trusted authors push right to main. Untrusted authors generate pull requests.
+    $trusted_author = $_SESSION['is_trusted'] || $_SESSION['is_admin'];   // trusted/admin authors push right to main. Untrusted authors generate pull requests.
+    if ($trusted_author) {
         $cmd = "( cd $escrawdata && git checkout main && git add $escpage $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push ) 2>&1";
     } else {
         $cmd = "( cd $escrawdata && git checkout -b $escbranch && git add $escpage $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push --set-upstream origin $escbranch ) 2>&1";
@@ -753,7 +754,7 @@ function make_new_page_version($page, $ext, $newtext, $comment, $trusted_author)
 }
 
 // !!! FIXME: a lot of copy/paste from make_new_page_version
-function delete_page($page, $comment, $trusted_author)
+function delete_page($page, $comment)
 {
     global $cooked_data, $raw_data, $git_commit_message_file, $git_committer_user, $github_url;
     global $github_committer_token, $github_repo_owner, $github_repo, $supported_formats, $base_url;
@@ -796,7 +797,9 @@ function delete_page($page, $comment, $trusted_author)
     }
 
     $cmd = '';
-    if ($trusted_author) {   // trusted authors push right to main. Untrusted authors generate pull requests.
+
+    $trusted_author = $_SESSION['is_trusted'] || $_SESSION['is_admin'];   // trusted/admin authors push right to main. Untrusted authors generate pull requests.
+    if ($trusted_author) {
         $cmd = "( cd $escrawdata && git checkout main && git rm $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push ) 2>&1";
     } else {
         $cmd = "( cd $escrawdata && git checkout -b $escbranch && git rm $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push --set-upstream origin $escbranch ) 2>&1";
@@ -838,13 +841,6 @@ function delete_page($page, $comment, $trusted_author)
         print_template('made_pull_request', [ 'branch' => $branch, 'prurl' => $response['html_url'], 'cooked' => $cooked ]);
     }
 }
-
-function is_trusted_author($id)
-{
-    global $trusted_data;
-    return file_exists("$trusted_data/$id");
-}
-
 
 function must_be_admin()
 {
@@ -984,8 +980,7 @@ if ($operation == 'view') {  // just serve the existing page.
     $data = $_SESSION['post_newversion'];
     $comment = isset($_SESSION['post_comment']) ? $_SESSION['post_comment'] : '';
     $format = isset($_SESSION['post_format']) ? $_SESSION['post_format'] : 'md';
-    $trusted = is_trusted_author($_SESSION['github_id']);
-    make_new_page_version($document, $format, $data, $comment, $trusted);
+    make_new_page_version($document, $format, $data, $comment);
 
     unset($_SESSION['post_newversion']);
     unset($_SESSION['post_comment']);
@@ -1004,8 +999,7 @@ if ($operation == 'view') {  // just serve the existing page.
     }
 
     $comment = isset($_SESSION['post_comment']) ? $_SESSION['post_comment'] : '';
-    $trusted = is_trusted_author($_SESSION['github_id']);
-    delete_page($document, $comment, $trusted);
+    delete_page($document, $comment);
 
     unset($_SESSION['post_comment']);
 
