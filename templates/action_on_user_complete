@@ -1,6 +1,4 @@
-<html><head>
-<title>@@user@ @action@</title>
-</head><body>
+@include html_standard_intro@
 
 <p>@username@, <a href='https://github.com/@user@'>@@user@</a> <img src='@user_avatar@' width='32' height='32'/>, has been <b>@action@</b>.</p>
 
@@ -8,5 +6,5 @@
 
 <p><a href="/">Or just go home instead.</a></p>
 
-</body></html>
+@include html_footer@
 

@@ -1,6 +1,4 @@
-<html><head>
-
-<title>Editing @page@</title>
+@include html_header@
 
 <link rel="stylesheet" href="/static_files/pandoc.css" />
 
@@ -123,7 +121,7 @@
   }
 </script>
 
-</head><body>
+@include html_startcontent@
 
 <p>
   <h1>
@@ -158,5 +156,4 @@
 
 </p>
 
-</body></html>
-
+@include html_footer@

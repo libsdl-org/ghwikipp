@@ -57,7 +57,7 @@ function release_git_repo_lock()
 
 function get_template($template, $vars=NULL, $safe_to_fail=true)
 {
-    global $document, $operation;
+    global $document, $operation, $wikiname;
 
     $str = file_get_contents($template);
     if ($str === false) {
@@ -74,8 +74,8 @@ function get_template($template, $vars=NULL, $safe_to_fail=true)
     // let templates include common text.
     $str = preg_replace_callback(
                '/\@include (.*?)\@/',
-               function ($matches) {
-                   return get_template($matches[1], $vars, $safe_to_fail);
+               function ($matches) use ($vars, $safe_to_fail) {
+                   return get_template('templates/' . $matches[1], $vars, $safe_to_fail);
                },
                $str
            );
@@ -83,7 +83,7 @@ function get_template($template, $vars=NULL, $safe_to_fail=true)
     // replace any @varname@ with the value of that variable.
     return preg_replace_callback(
                '/\@([a-z_]+)\@/',
-               function ($matches) use ($vars, $document, $operation) {
+               function ($matches) use ($vars, $document, $operation, $wikiname) {
                    $key = $matches[1];
                    if (($vars != NULL) && isset($vars[$key])) { return $vars[$key]; }
                    else if ($key == 'page') { return $document; }
@@ -94,6 +94,8 @@ function get_template($template, $vars=NULL, $safe_to_fail=true)
                    else if ($key == 'github_name') { return isset($_SESSION['github_name']) ? $_SESSION['github_name'] : '[not logged in]'; }
                    else if ($key == 'github_email') { return isset($_SESSION['github_email']) ? $_SESSION['github_email'] : '[not logged in]'; }
                    else if ($key == 'github_avatar') { return isset($_SESSION['github_avatar']) ? $_SESSION['github_avatar'] : ''; }  // !!! FIXME: return a generic image instead of ''
+                   else if ($key == 'wikiname') { return $wikiname; }
+                   else if ($key == 'title') { return "$document - $wikiname"; }  // this is often overridden by $vars.
 	           return "@$key@";  // ignore it.
                },
                $str
@@ -852,7 +854,7 @@ function must_be_admin()
 
 function perform_action_on_user($action, $statedir, $user, $is_do)  // !$is_do == undo.
 {
-    global $github_committer_token;
+    global $github_committer_token, $wikiname;
 
     must_be_admin();
 
@@ -882,12 +884,15 @@ function perform_action_on_user($action, $statedir, $user, $is_do)  // !$is_do =
         'revaction' => $action,
         'user' => $user,
         'username' => $response['name'],
-        'user_avatar' => $response['avatar_url']
+        'user_avatar' => $response['avatar_url'],
+        'title' => "@$user {$action}ed - $wikiname"
     ]);
 }
 
 function confirm_action_on_user($action, $user, $statedir, $explanation)
 {
+    global $wikiname;
+
     must_be_admin();  // only returns if we are an admin.
     $response = call_github_api("https://api.github.com/users/$user", NULL, $github_committer_token);
     $is_do = file_exists("$statedir/" . $response['id']);
@@ -896,7 +901,8 @@ function confirm_action_on_user($action, $user, $statedir, $explanation)
         'action' => $is_do ? "un{$action}" : $action,
         'user' => $user, 'username' => $response['name'],
         'user_avatar' => $response['avatar_url'],
-        'explanation' => $explanation
+        'explanation' => $explanation,
+        'title' => "$action @$user?- $wikiname"
     ]);
 }
 
@@ -937,7 +943,7 @@ if ($operation == 'view') {  // just serve the existing page.
     obtain_git_repo_lock();
     $cooked = @file_get_contents("$cooked_data/$document.html");
 
-    $template_vars = array();
+    $template_vars = array( 'title' => "Edit $document - $wikiname" );
 
     $raw = false;
     foreach ($supported_formats as $ext => $format) {
@@ -988,7 +994,7 @@ if ($operation == 'view') {  // just serve the existing page.
 
 } else if ($operation == 'delete') {
     authorize_with_github();  // only returns if we are authorized.
-    print_template('delete_confirmation');
+    print_template('delete_confirmation', [ 'title' => "Delete $document? - $wikiname" ]);
 
 } else if ($operation == 'postdelete') {
     // don't lose the changes if GitHub forces a redirect.

@@ -1,7 +1,7 @@
-<html><head>
-<title>@page@</title>
+@include html_header@
 <link rel="stylesheet" href="/static_files/pandoc.css" />
-</head><body>
+@include html_startcontent@
+
 <p><h1>@page@</h1></p>
 
 <p>Thank you for your edit!</p>
@@ -24,6 +24,7 @@ automatically, without an approval process!</p>
 
 @cooked@
 
-</body></html>
+@include html_footer@
+
 
 

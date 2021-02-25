@@ -1,8 +1,8 @@
-<html><head><title>@page@</title></head><body>
+@include html_standard_intro@
 
 <p><h1>@httpresponse@</h1></p>
 
 <p>@message@</p>
 
-</body></html>
+@include html_footer@
 

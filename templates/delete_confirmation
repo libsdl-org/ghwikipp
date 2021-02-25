@@ -1,6 +1,4 @@
-<html><head>
-
-<title>Delete @page@?</title>
+@include html_standard_intro@
 
 <p><h1>Delete @page@?</h1></p>
 <p><h2>Are you sure you want to delete this page?</h2></p>
@@ -11,5 +9,5 @@
 </form>
 </p>
 
-</body></html>
+@include html_footer@
 

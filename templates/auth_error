@@ -1,4 +1,4 @@
-<html><head><title>@page@</title></head><body>
+@include html_standard_intro@
 
 <p><h1>@httpresponse@</h1></p>
 
@@ -8,6 +8,6 @@
 
 <p><a href="/">Click here</a> to go home.</p>
 
-</body></html>
+@include html_footer@
 
 

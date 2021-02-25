@@ -1,9 +1,9 @@
-<html><head><title>@page@</title></head><body>
+@include html_standard_intro@
+
 <p><h1>@page@</h1></p>
 
 <p>No such page '@page@' yet.</p>
 <p><a href='/@page@/edit'>Click here</a> to create it!</p>
 
-</body></html>
-
+@include html_footer@
 
