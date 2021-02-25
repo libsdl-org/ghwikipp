@@ -57,7 +57,8 @@ function release_git_repo_lock()
 
 function get_template($template, $vars=NULL, $safe_to_fail=true)
 {
-    global $document, $operation, $wikiname, $wikidesc, $wiki_license, $wiki_license_url, $twitteruser, $base_url, $github_url;
+    global $document, $operation, $wikiname, $wikidesc, $wiki_license, $wiki_license_url, $twitteruser;
+    global $github_repo_main_branch, $base_url, $github_url;
 
     $str = file_get_contents($template);
     if ($str === false) {
@@ -83,7 +84,10 @@ function get_template($template, $vars=NULL, $safe_to_fail=true)
     // replace any @varname@ with the value of that variable.
     return preg_replace_callback(
                '/\@([a-z_]+)\@/',
-               function ($matches) use ($vars, $document, $operation, $wikiname, $wikidesc, $wiki_license, $wiki_license_url, $base_url, $github_url, $twitteruser) {
+               function ($matches) use (
+                       $vars, $document, $operation, $wikiname, $wikidesc,
+                       $wiki_license, $wiki_license_url, $base_url, $github_url,
+                       $twitteruser, $github_repo_main_branch) {
                    $key = $matches[1];
                    if (($vars != NULL) && isset($vars[$key])) { return $vars[$key]; }
                    else if ($key == 'page') { return $document; }
@@ -101,6 +105,7 @@ function get_template($template, $vars=NULL, $safe_to_fail=true)
                    else if ($key == 'wikilicenseurl') { return $wiki_license_url; }
                    else if ($key == 'twitteruser') { return $twitteruser; }
                    else if ($key == 'githuburl') { return $github_url; }
+                   else if ($key == 'githubmainbranch') { return $github_repo_main_branch; }
                    else if ($key == 'title') { return "$document - $wikiname"; }  // this is often overridden by $vars.
 	           return "@$key@";  // ignore it.
                },
@@ -321,7 +326,7 @@ function validate_webhook_signature($gitHubSignatureHeader, $payload)
 
 function github_webhook()
 {
-    global $raw_data, $cooked_data;
+    global $raw_data, $cooked_data, $github_repo_main_branch;
 
     header('Content-Type: text/plain; charset=utf-8');
 
@@ -351,7 +356,7 @@ function github_webhook()
 
     if ($event == 'push') {   // we only care about push events.
         $json = json_decode($payload, TRUE);
-        if ($json['ref'] != 'refs/heads/main') {
+        if ($json['ref'] != "refs/heads/$github_repo_main_branch") {
             $str .= "PUSH EVENT ISN'T FOR MAIN BRANCH, IGNORING.\n";  // probably a topic branch we just pushed for a pull request.
         } else {
             obtain_git_repo_lock();
@@ -664,6 +669,7 @@ function make_new_page_version($page, $ext, $newtext, $comment)
 {
     global $raw_data, $git_commit_message_file, $git_committer_user, $github_url, $base_url;
     global $github_committer_token, $github_repo_owner, $github_repo, $supported_formats;
+    global $github_repo_main_branch;
 
     force_authorize_with_github();  // only returns if we are authorized.
 
@@ -715,8 +721,9 @@ function make_new_page_version($page, $ext, $newtext, $comment)
 
     $cmd = '';
     $trusted_author = $_SESSION['is_trusted'] || $_SESSION['is_admin'];   // trusted/admin authors push right to main. Untrusted authors generate pull requests.
+    $escmain = $github_repo_main_branch;
     if ($trusted_author) {
-        $cmd = "( cd $escrawdata && git checkout main && git add $escpage $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push ) 2>&1";
+        $cmd = "( cd $escrawdata && git checkout $escmain && git add $escpage $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push ) 2>&1";
     } else {
         $cmd = "( cd $escrawdata && git checkout -b $escbranch && git add $escpage $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push --set-upstream origin $escbranch ) 2>&1";
     }
@@ -724,7 +731,7 @@ function make_new_page_version($page, $ext, $newtext, $comment)
     unset($output);
     $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
     unlink($git_commit_message_file);
-    exec("cd $escrawdata && git checkout main && ( git reset --hard HEAD ; git clean -df )");   // just in case.
+    exec("cd $escrawdata && git checkout $escmain && ( git reset --hard HEAD ; git clean -df )");   // just in case.
 
     $cooked = '';
     if ($trusted_author) {
@@ -750,10 +757,10 @@ function make_new_page_version($page, $ext, $newtext, $comment)
     } else {  // generate a pull request so we can review before applying.
         $user = $_SESSION['github_user'];
         $body = "If this user should be blocked from further edits, an admin should go to $base_url/$user/block\n" .
-                "If this user should be trusted to make direct pushes to main, without a pull request, an admin should go to $base_url/$user/trust\n";
+                "If this user should be trusted to make direct pushes to $github_repo_main_branch, without a pull request, an admin should go to $base_url/$user/trust\n";
         $response = call_github_api("https://api.github.com/repos/$github_repo_owner/$github_repo/pulls",
                                     [ 'head' => $branch,
-                                      'base' => 'main',
+                                      'base' => $github_repo_main_branch,
                                       'title' => "$comment",
                                       'body' => $body,
                                       'maintainer_can_modify' => true,
@@ -768,6 +775,7 @@ function delete_page($page, $comment)
 {
     global $cooked_data, $raw_data, $git_commit_message_file, $git_committer_user, $github_url;
     global $github_committer_token, $github_repo_owner, $github_repo, $supported_formats, $base_url;
+    global $github_repo_main_branch;
 
     force_authorize_with_github();  // only returns if we are authorized.
 
@@ -811,8 +819,9 @@ function delete_page($page, $comment)
     $cmd = '';
 
     $trusted_author = $_SESSION['is_trusted'] || $_SESSION['is_admin'];   // trusted/admin authors push right to main. Untrusted authors generate pull requests.
+    $escmain = $github_repo_main_branch;
     if ($trusted_author) {
-        $cmd = "( cd $escrawdata && git checkout main && git rm $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push ) 2>&1";
+        $cmd = "( cd $escrawdata && git checkout $escmain && git rm $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push ) 2>&1";
     } else {
         $cmd = "( cd $escrawdata && git checkout -b $escbranch && git rm $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push --set-upstream origin $escbranch ) 2>&1";
     }
@@ -820,7 +829,7 @@ function delete_page($page, $comment)
     unset($output);
     $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
     unlink($git_commit_message_file);
-    exec("cd $escrawdata && git checkout main && ( git reset --hard HEAD ; git clean -df )");   // just in case.
+    exec("cd $escrawdata && git checkout $escmain && ( git reset --hard HEAD ; git clean -df )");   // just in case.
 
     release_git_repo_lock();
 
@@ -841,10 +850,10 @@ function delete_page($page, $comment)
     } else {  // generate a pull request so we can review before applying.
         $user = $_SESSION['github_user'];
         $body = "If this user should be blocked from further edits, an admin should go to $base_url/$user/block\n" .
-                "If this user should be trusted to make direct pushes to main, without a pull request, an admin should go to $base_url/$user/trust\n";
+                "If this user should be trusted to make direct pushes to $github_repo_main_branch, without a pull request, an admin should go to $base_url/$user/trust\n";
         $response = call_github_api("https://api.github.com/repos/$github_repo_owner/$github_repo/pulls",
                                     [ 'head' => $branch,
-                                      'base' => 'main',
+                                      'base' => $github_repo_main_branch,
                                       'title' => "$comment",
                                       'body' => $body,
                                       'maintainer_can_modify' => true,
@@ -1044,7 +1053,7 @@ if ($operation == 'view') {  // just serve the existing page.
 } else if ($operation == 'history') {
     foreach ($supported_formats as $ext => $format) {
         if (file_exists("$raw_data/$document.$ext")) {
-            redirect("$github_url/commits/main/$document.$ext");
+            redirect("$github_url/commits/$github_repo_main_branch/$document.$ext");
         }
     }
     fail404("No such page '$document'");
@@ -1056,13 +1065,13 @@ if ($operation == 'view') {  // just serve the existing page.
     perform_action_on_user('block', $blocked_data, $document, ($operation == 'block_confirm'));
 
 } else if ($operation == 'trust') {
-    confirm_action_on_user($operation, $document, $trusted_data, "Trusted users' edits are pushed directly to <b>main</b> without generating pull requests.");
+    confirm_action_on_user($operation, $document, $trusted_data, "Trusted users' edits are pushed directly to <b>$github_repo_main_branch</b> without generating pull requests.");
 
 } else if (($operation == 'trust_confirm') || ($operation == 'untrust_confirm')) {
     perform_action_on_user('trust', $trusted_data, $document, ($operation == 'trust_confirm'));
 
 } else if ($operation == 'admin') {
-    confirm_action_on_user($operation, $document, $admin_data, "Admins can change wiki and user settings, and push changes directly to <b>main</b> without generating pull requests.");
+    confirm_action_on_user($operation, $document, $admin_data, "Admins can change wiki and user settings, and push changes directly to <b>$github_repo_main_branch</b> without generating pull requests.");
 
 } else if (($operation == 'admin_confirm') || ($operation == 'unadmin_confirm')) {
     perform_action_on_user('admin', $admin_data, $document, ($operation == 'admin_confirm'));
