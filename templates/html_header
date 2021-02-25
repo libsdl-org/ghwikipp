@@ -1,4 +1,15 @@
 <html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 <title>@title@</title>
-<!-- FIXME: favicon, stylesheets, etc here. -->
+<link rel="icon" type="image/ico" href="/static_files/favicon.ico">
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@@twitteruser@" />
+<meta name="twitter:image" content="@baseurl@/static_files/logo.png" />
+<meta property="og:image" content="@baseurl@/static_files/logo.png" />
+<meta name="twitter:url" content="@baseurl@" />
+<meta property="og:url" content="@baseurl@" />
+<meta name="twitter:title" content="@page@" />
+<meta property="og:title" content="@page@" />
+<meta name="twitter:description" content="@wikidesc@" />
+<meta property="og:description" content="@wikidesc@" />
 

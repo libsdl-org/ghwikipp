@@ -57,7 +57,7 @@ function release_git_repo_lock()
 
 function get_template($template, $vars=NULL, $safe_to_fail=true)
 {
-    global $document, $operation, $wikiname;
+    global $document, $operation, $wikiname, $wikidesc, $wiki_license, $wiki_license_url, $twitteruser, $base_url;
 
     $str = file_get_contents($template);
     if ($str === false) {
@@ -83,18 +83,23 @@ function get_template($template, $vars=NULL, $safe_to_fail=true)
     // replace any @varname@ with the value of that variable.
     return preg_replace_callback(
                '/\@([a-z_]+)\@/',
-               function ($matches) use ($vars, $document, $operation, $wikiname) {
+               function ($matches) use ($vars, $document, $operation, $wikiname, $wikidesc, $wiki_license, $wiki_license_url, $base_url, $twitteruser) {
                    $key = $matches[1];
                    if (($vars != NULL) && isset($vars[$key])) { return $vars[$key]; }
                    else if ($key == 'page') { return $document; }
                    else if ($key == 'operation') { return $operation; }
                    else if ($key == 'url') { return $_SERVER['PHP_SELF']; }
+                   else if ($key == 'baseurl') { return $base_url; }
                    else if ($key == 'github_id') { return isset($_SESSION['github_id']) ? $_SESSION['github_id'] : '[not logged in]'; }
                    else if ($key == 'github_user') { return isset($_SESSION['github_user']) ? $_SESSION['github_user'] : '[not logged in]'; }
                    else if ($key == 'github_name') { return isset($_SESSION['github_name']) ? $_SESSION['github_name'] : '[not logged in]'; }
                    else if ($key == 'github_email') { return isset($_SESSION['github_email']) ? $_SESSION['github_email'] : '[not logged in]'; }
                    else if ($key == 'github_avatar') { return isset($_SESSION['github_avatar']) ? $_SESSION['github_avatar'] : ''; }  // !!! FIXME: return a generic image instead of ''
                    else if ($key == 'wikiname') { return $wikiname; }
+                   else if ($key == 'wikidesc') { return $wikidesc; }
+                   else if ($key == 'wikilicense') { return $wiki_license; }
+                   else if ($key == 'wikilicenseurl') { return $wiki_license_url; }
+                   else if ($key == 'twitteruser') { return $twitteruser; }
                    else if ($key == 'title') { return "$document - $wikiname"; }  // this is often overridden by $vars.
 	           return "@$key@";  // ignore it.
                },
