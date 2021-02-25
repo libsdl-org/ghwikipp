@@ -1,7 +1,8 @@
 <html><head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 <title>@title@</title>
-<link rel="icon" type="image/ico" href="/static_files/favicon.ico">
+<link rel="icon" type="image/ico" href="/static_files/favicon.ico" />
+<link rel="alternate" type="application/atom+xml" title="recent changes" href="@githuburl@/commits/@githubmainbranch@.atom" />
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:site" content="@@twitteruser@" />
 <meta name="twitter:image" content="@baseurl@/static_files/logo.png" />
