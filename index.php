@@ -674,6 +674,8 @@ function make_new_page_version($page, $ext, $newtext, $comment)
         $comment = 'Updated.';
     }
 
+    $comment = "$page: $comment";
+
     $gitfname = "$raw_data/$page.$ext";
     $escpage = escapeshellarg("$page.$ext");
     $escrawdata = escapeshellarg($raw_data);
@@ -752,7 +754,7 @@ function make_new_page_version($page, $ext, $newtext, $comment)
         $response = call_github_api("https://api.github.com/repos/$github_repo_owner/$github_repo/pulls",
                                     [ 'head' => $branch,
                                       'base' => 'main',
-                                      'title' => "$page: $comment",
+                                      'title' => "$comment",
                                       'body' => $body,
                                       'maintainer_can_modify' => true,
                                       'draft' => false ],
@@ -774,6 +776,8 @@ function delete_page($page, $comment)
     if ($comment == '') {
         $comment = 'Deleted.';
     }
+
+    $comment = "$page: $comment";
 
     $escrawdata = escapeshellarg($raw_data);
 
@@ -841,7 +845,7 @@ function delete_page($page, $comment)
         $response = call_github_api("https://api.github.com/repos/$github_repo_owner/$github_repo/pulls",
                                     [ 'head' => $branch,
                                       'base' => 'main',
-                                      'title' => "$page: $comment",
+                                      'title' => "$comment",
                                       'body' => $body,
                                       'maintainer_can_modify' => true,
                                       'draft' => false ],
