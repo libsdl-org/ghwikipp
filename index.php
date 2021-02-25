@@ -57,7 +57,7 @@ function release_git_repo_lock()
 
 function get_template($template, $vars=NULL, $safe_to_fail=true)
 {
-    global $document, $operation, $wikiname, $wikidesc, $wiki_license, $wiki_license_url, $twitteruser, $base_url;
+    global $document, $operation, $wikiname, $wikidesc, $wiki_license, $wiki_license_url, $twitteruser, $base_url, $github_url;
 
     $str = file_get_contents($template);
     if ($str === false) {
@@ -83,7 +83,7 @@ function get_template($template, $vars=NULL, $safe_to_fail=true)
     // replace any @varname@ with the value of that variable.
     return preg_replace_callback(
                '/\@([a-z_]+)\@/',
-               function ($matches) use ($vars, $document, $operation, $wikiname, $wikidesc, $wiki_license, $wiki_license_url, $base_url, $twitteruser) {
+               function ($matches) use ($vars, $document, $operation, $wikiname, $wikidesc, $wiki_license, $wiki_license_url, $base_url, $github_url, $twitteruser) {
                    $key = $matches[1];
                    if (($vars != NULL) && isset($vars[$key])) { return $vars[$key]; }
                    else if ($key == 'page') { return $document; }
@@ -100,6 +100,7 @@ function get_template($template, $vars=NULL, $safe_to_fail=true)
                    else if ($key == 'wikilicense') { return $wiki_license; }
                    else if ($key == 'wikilicenseurl') { return $wiki_license_url; }
                    else if ($key == 'twitteruser') { return $twitteruser; }
+                   else if ($key == 'githuburl') { return $github_url; }
                    else if ($key == 'title') { return "$document - $wikiname"; }  // this is often overridden by $vars.
 	           return "@$key@";  // ignore it.
                },
