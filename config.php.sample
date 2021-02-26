@@ -1,0 +1,101 @@
+<?php
+
+// If you don't fill in all these fields, assume your wiki will break.
+
+// This string is used as the title of the wiki on every page.
+$wikiname = 'My Wiki';
+
+// This string describes the wiki (it'll show up in title cards on
+//  Twitter, etc). Keep it brief.
+$wikidesc = 'My Super-Cool Information Wiki';
+
+// This string is used for filenames for the offline archives. If you set this
+//  to 'x', the archive will be zipped in a file called 'x.zip' and inside
+//  that zipfile, the pages will be in an 'x' subdirectory.
+$wiki_offline_basename = 'mywiki';
+
+// This string describes the license that your wiki's contents are licensed
+//  under. CC BY 4.0 is a good choice for "take this for free, use it
+//  however you want, but don't take my name off it." But use whatever you like.
+$wiki_license = 'Creative Commons Attribution 4.0 International (CC BY 4.0)';
+
+// This string is a URL where your license text can be read.
+$wiki_license_url = 'https://creativecommons.org/licenses/by/4.0/';
+
+// This is the base URL of the wiki. It (probably) needs to be the
+//  root of a virtual host and not a subdirectory. No ending slash!
+$base_url = 'https://mywiki.example.com';
+
+// This string is a twitter username associated with the wiki. It can be
+//  specific to the wiki or your project. It shows up in a preview card
+//  if a wiki link is tweeted. Don't put the '@' char in front of it.
+$twitteruser = 'MyTwitterAccount';
+
+// This string lists a github username for a person that is always an
+//  admin of this wiki, no matter what rights have been granted elsewhere.
+//  Instead of a string, this can also be an array of strings to list
+//  multiple users. There's an actual UI for granting admin rights, so
+//  this is just for bootstrapping and emergency purposes. Admins can
+//  mark users as trusted, block users, and grant other users admin
+//  access, and are always trusted to push directly to main without a
+//  pull request. And probably other rights in the future! Admins can't
+//  revoke admin access from users listed here.
+$always_admin = 'my-github-username';
+
+// This string is the owner of the wiki GitHub repo. This can be an
+//  individual or an GitHub organization. If you cloned the repo at
+//  https://github.com/X/Y, this string should be 'X' .
+$github_repo_owner = 'a-github-username';
+
+// This string is the name of the wiki GitHub repo.  If you cloned the
+//  repo at https://github.com/X/Y, this string should be 'Y' .
+$github_repo = 'mywiki';
+
+// This string is the main branch of the wiki repo. Many git repos use
+//  "master" by default, but many are migrating to "main" instead.
+$github_repo_main_branch = 'main';
+
+// This string is the GitHub username of your wikibot (see README.md)
+$git_committer_user = 'MyWikiBot';
+
+// This string is a more-human name for the wikibot. It's used for the
+//  committer's name (as opposed to author's name) on git commits.
+$git_committer_name = 'My Wiki Bot';
+
+// This string is the email address for the wikibot, matching the one
+//  you supplied to GitHub when creating the account. It's used for
+//  the committer's email (as opposed to the author's email) on git
+//  commits. We don't send email to this address, but GitHub might.
+$git_committer_email = 'mywikibot@example.com';
+
+// This string is the Personal Access Token that you set up for the
+//  wikibot on GitHub. See README.md.
+$github_committer_token = '';  // looks something like: 'ada851f66e0db4ea5b30ad8c149a0a9b4462cd05';
+
+// This string is the Client ID that you set up for your account's
+//  (or your organization's account's) OAuth app. See README.md.
+$github_oauth_clientid = '';  // looks something like: '44502d79f7e6c0e00511';
+
+// This string is the secret key that you set up for your account's
+//  (or your organization's account's) OAuth app. See README.md.
+$github_oauth_secret = '';  // looks something like: '6aa02755289d056eac1f3f934051a8fb32bc59fb
+
+// This string is the secret key that your set up for the wiki
+//  repo's webhook. See README.md.
+$github_webhook_secret = '';   // whatever you put in here, like maybe: 'ds09vjgwegjp3-og1-934gj9jvq3e0k49mglkglsmmh1092';
+
+
+// The rest of these fields are safe to leave alone, unless you find you
+//  don't have write access somewhere or just like tweaking things.
+$user_agent = "ghwikipp/1.0 ($github_repo_owner/$github_repo)";
+$raw_data = 'raw';
+$cooked_data = 'cooked';
+$offline_data = 'offline';
+$trusted_data = 'trusted';
+$admin_data = 'admins';
+$blocked_data = 'blocked';
+$repo_lock_fname = 'git_repo_lock';
+$ssh_key_fname = getcwd() . '/id_ed25519';  // THIS MUST BE AN ABSOLUTE PATH
+$git_commit_message_file = getcwd() . '/tmp_commit_message.txt';  // THIS MUST BE AN ABSOLUTE PATH
+
+?>
