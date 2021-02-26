@@ -958,6 +958,22 @@ if ($operation == 'view') {  // just serve the existing page.
     }
     release_git_repo_lock();
 
+} else if ($operation == 'raw') {  // just serve the existing raw page.
+    obtain_git_repo_lock();
+    foreach ($supported_formats as $ext => $format) {
+        $raw = @file_get_contents("$raw_data/$document.$ext");
+        if ($raw !== false) {
+            release_git_repo_lock();
+            header('Content-Type: text/plain; charset=utf-8');
+            print($raw);
+            print("\n");
+            exit(0);
+        }
+    }
+    release_git_repo_lock();
+
+    print_template('not_yet_a_page');
+
 } else if ($operation == 'edit') {
     authorize_with_github();  // only returns if we are authorized.
     obtain_git_repo_lock();
