@@ -2,7 +2,7 @@
 <div style='background-color: #BFC9D9; padding: 10px; margin-top: 10px;' width='100%'>
 <font size="-2">
 <center>
-<p>[ <a href="/">front page</a> | <a href="@githuburl@/commits/@githubmainbranch@">recent changes</a> ]
+<p>[ <a href="/">front page</a> | <a href="@githuburl@/commits/@githubmainbranch@">recent changes</a> | <a href="/static_files/offline/@offlinebasename@.zip">offline html</a> ]
 <p>All wiki content is licensed under <a href="@wikilicenseurl@">@wikilicense@</a>. Wiki powered by <a href="https://github.com/icculus/ghwikipp">ghwikipp</a>.</p>
 </font>
 </div>

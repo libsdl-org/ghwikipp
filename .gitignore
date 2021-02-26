@@ -7,8 +7,11 @@ git_repo_lock
 tmp_commit_message.txt
 id_ed25519
 id_ed25519.pub
+offline
 static_files/logo.png
 static_files/favicon.ico
+static_files/offline
+
 
 
 
