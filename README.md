@@ -21,8 +21,9 @@ be pushed directly to main and show up immediately on the website.
 If you aren't a trusted user, your edits become pull requests that
 we can examine, comment on, and eventually merge.
 
-If we like your pull requests, we can mark you trusted. If we don't,
-we can block you and the wiki won't let you submit any more edits.
+If we like your pull requests, we can mark you trusted. If we don't
+like _you_, we can block you and the wiki won't let you submit any
+more edits.
 
 All wiki pages are either Markdown or MediaWiki format. An offline
 archive of the wiki pages, as HTML, is generated once per day and
