@@ -13,6 +13,8 @@
 <a href='/@page@/history'>history</a>
 |
 <a href='@githuburl@/issues/new?title=Feedback%20on%20page%20@page@'>feedback</a>
+|
+<a href='/@page@/raw'>raw</a>
 ]
 
 @include html_footer@
