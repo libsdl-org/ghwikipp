@@ -726,7 +726,7 @@ function make_new_page_version($page, $ext, $newtext, $comment)
     if ($trusted_author) {
         $cmd = "( cd $escrawdata && git checkout $escmain && git add $escpage $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push ) 2>&1";
     } else {
-        $cmd = "( cd $escrawdata && git checkout -b $escbranch && git add $escpage $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push --set-upstream origin $escbranch ) 2>&1";
+        $cmd = "( cd $escrawdata && git checkout -b $escbranch && git add $escpage $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push --set-upstream origin $escbranch && git checkout $escmain && git branch -d $escbranch) 2>&1";
     }
 
     unset($output);
@@ -824,7 +824,7 @@ function delete_page($page, $comment)
     if ($trusted_author) {
         $cmd = "( cd $escrawdata && git checkout $escmain && git rm $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push ) 2>&1";
     } else {
-        $cmd = "( cd $escrawdata && git checkout -b $escbranch && git rm $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push --set-upstream origin $escbranch ) 2>&1";
+        $cmd = "( cd $escrawdata && git checkout -b $escbranch && git rm $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push --set-upstream origin $escbranch && git checkout $escmain && git branch -d $escbranch ) 2>&1";
     }
 
     unset($output);
