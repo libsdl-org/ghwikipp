@@ -33,6 +33,25 @@
     border: 1px solid #ccc;
     border-top: none;
   }
+
+  /* Text and background color for dark mode */
+  @media (prefers-color-scheme: dark) {
+    .tab {
+      background-color: #404040;
+    }
+
+    .tab button:hover {
+      background-color: #666666;
+    }
+
+    .tab button.active {
+      background-color: #555555;
+    }
+
+    .tabcontent {
+      border: 1px solid #555555;
+    }
+  }
 </style>
 
 <script type='text/javascript'>
