@@ -161,7 +161,7 @@
 
 <div id="editor" class="tabcontent">
   <form action='/@page@/post' method='post'>
-    <textarea id='rawtext' name='newversion' rows='20' cols='80' oninput='rawtext_needs_recooking();'>@raw@</textarea><br/>
+    <textarea id='rawtext' name='newversion' rows='20' style='width: 100%;' oninput='rawtext_needs_recooking();'>@raw@</textarea><br/>
     <br/>
     <input type="text" placeholder="Brief description of changes" name="comment" />
     <select id="format" name="format" onchange='rawtext_needs_recooking();'>
