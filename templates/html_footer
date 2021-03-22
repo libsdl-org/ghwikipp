@@ -6,6 +6,8 @@
 [
 <a href="/">front page</a>
 |
+<a href="/wiki/index">index</a>
+|
 <a href="@githuburl@/commits/@githubmainbranch@">recent changes</a>
 |
 <a href="@githuburl@">git repo</a>

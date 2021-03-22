@@ -1,0 +1,8 @@
+@include html_standard_intro@
+
+<p><h1>Index of all pages</h1></p>
+
+<p><ul>@htmllist@</ul></p>
+
+@include html_footer@
+

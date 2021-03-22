@@ -1095,6 +1095,33 @@ if ($operation == 'view') {  // just serve the existing page.
 } else if (($operation == 'admin_confirm') || ($operation == 'unadmin_confirm')) {
     perform_action_on_user('admin', $admin_data, $document, ($operation == 'admin_confirm'));
 
+} else if ($operation == 'index') {
+    obtain_git_repo_lock();
+    $dirp = opendir($raw_data);
+    if ($dirp === false) {
+        fail503('Failed to read directory index; please try again later.');
+    }
+
+    $pagelist = array();
+    while (($dent = readdir($dirp)) !== false) {
+        if (substr($dent, 0, 1) == '.') { continue; }  // skip ".", "..", and metadata.
+        if (preg_match('/^(.*)\.(.*)$/', $dent, $matches) != 1) { continue; }
+        $pagename = $matches[1];
+        $ext = $matches[2];
+        if (!isset($supported_formats[$ext])) { continue; }
+        $pagelist[] = $pagename;
+    }
+    closedir($dirp);
+    release_git_repo_lock();
+
+    $htmllist = '';
+    asort($pagelist, SORT_STRING|SORT_FLAG_CASE);
+    foreach ($pagelist as $p) {
+        $htmllist .= "<li><a href='/$p'>$p</a></li>\n";
+    }
+
+    print_template('index', [ 'htmllist' => $htmllist ]);
+
 } else if ($operation == 'logout') {
     require_session();
     $_SESSION = array();  // nuke everything.
