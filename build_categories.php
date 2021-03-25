@@ -116,6 +116,7 @@ if ($git_repo_lock_fp === false) {
 build_category_lists($raw_data);
 
 // !!! FIXME: this needs to revert the working copy if we fail halfway through!
+$changes = false;
 foreach ($categories as $cat => $pages) {
     //print("CATEGORY '$cat':\n");
     //print_r($pages);
@@ -125,6 +126,7 @@ foreach ($categories as $cat => $pages) {
     $contents = '';
     if (!file_exists($path)) {
         file_put_contents($path, "= $cat =\n\n<!-- BEGIN CATEGORY LIST -->\n<!-- END CATEGORY LIST -->\n\n");
+        $changes = true;
     }
 
     $in = fopen($path, "r");
@@ -171,23 +173,33 @@ foreach ($categories as $cat => $pages) {
 
     fclose($out);
 
-    if (!rename($tmppath, $path)) {
+    $escpath = escapeshellarg($path);
+    $esctmppath = escapeshellarg($tmppath);
+    $rc = 0;
+    system("diff --brief $escpath $esctmppath >/dev/null", $rc);
+    if ($rc == 0) {  // no changes
         unlink($tmppath);
-        print("Failed to rename '$tmppath' to '$path'!\n");
-        exit(1);
+    } else {
+        $changes = true;
+        if (!rename($tmppath, $path)) {
+            unlink($tmppath);
+            print("Failed to rename '$tmppath' to '$path'!\n");
+            exit(1);
+        }
     }
 }
 
-$escrawdata = escapeshellarg($raw_data);
-$cmd = "( cd $escrawdata && git add -A && git commit -m 'Sync category pages' && git push ) 2>&1";
-unset($output);
-$failed = (exec($cmd, $output, $result) === false) || ($result != 0);
-if ($failed) {
-    print("FAILED GIT RUN!\n\n    cmd:\n'$cmd'\n\noutput:\n");
-    foreach ($output as $l) {
-        print("    $l\n");
+if ($changes) {
+    $cmd = "( cd $escrawdata && git add -A && git commit -m 'Sync category pages' && git push ) 2>&1";
+    unset($output);
+    $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
+    if ($failed) {
+        print("FAILED GIT RUN!\n\n    cmd:\n'$cmd'\n\noutput:\n");
+        foreach ($output as $l) {
+            print("    $l\n");
+        }
+        exit(1);
     }
-    exit(1);
 }
 
 flock($git_repo_lock_fp, LOCK_UN);
