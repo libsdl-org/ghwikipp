@@ -13,7 +13,7 @@ $supported_formats = [
     'mediawiki' => 'mediawiki'
 ];
 
-putenv("GIT_SSH_COMMAND=ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $ssh_key_fname");
+putenv("GIT_SSH_COMMAND=ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -q -i $ssh_key_fname");
 putenv("GIT_COMMITTER_NAME=$git_committer_name");
 putenv("GIT_COMMITTER_EMAIL=$git_committer_email");
 putenv("GIT_AUTHOR_NAME=$git_committer_name");
@@ -115,8 +115,6 @@ if ($git_repo_lock_fp === false) {
 
 build_category_lists($raw_data);
 
-// !!! FIXME: this needs to revert the working copy if we fail halfway through!
-$changes = false;
 foreach ($categories as $cat => $pages) {
     //print("CATEGORY '$cat':\n");
     //print_r($pages);
@@ -126,18 +124,19 @@ foreach ($categories as $cat => $pages) {
     $contents = '';
     if (!file_exists($path)) {
         file_put_contents($path, "= $cat =\n\n<!-- BEGIN CATEGORY LIST -->\n<!-- END CATEGORY LIST -->\n\n");
-        $changes = true;
     }
 
     $in = fopen($path, "r");
     if ($in === false) {
         print("Failed to open '$path' for reading\n");
+        system("cd $escrawdata && git clean -dfq && git checkout -- .");
         exit(1);
     }
 
     $out = fopen($tmppath, "w");
     if ($out === false) {
         print("Failed to open '$tmppath' for writing\n");
+        system("cd $escrawdata && git clean -dfq && git checkout -- .");
         exit(1);
     }
 
@@ -173,22 +172,23 @@ foreach ($categories as $cat => $pages) {
 
     fclose($out);
 
-    $escpath = escapeshellarg($path);
-    $esctmppath = escapeshellarg($tmppath);
-    $rc = 0;
-    system("diff --brief $escpath $esctmppath >/dev/null", $rc);
-    if ($rc == 0) {  // no changes
+    if (!rename($tmppath, $path)) {
         unlink($tmppath);
-    } else {
-        $changes = true;
-        if (!rename($tmppath, $path)) {
-            unlink($tmppath);
-            print("Failed to rename '$tmppath' to '$path'!\n");
-            exit(1);
-        }
+        print("Failed to rename '$tmppath' to '$path'!\n");
+        system("cd $escrawdata && git clean -dfq && git checkout -- .");
+        exit(1);
     }
 }
 
+unset($output);
+$failed = ((exec("cd $escrawdata && git status -s |wc -l", $output, $rc) === false) || ($rc != 0));
+if ($failed) {
+    print("Failed to run 'git status'!\n");
+    system("cd $escrawdata && git clean -dfq && git checkout -- .");
+    exit(1);
+}
+
+$changes = (isset($output[0]) && $output[0] != '0');
 if ($changes) {
     $cmd = "( cd $escrawdata && git add -A && git commit -m 'Sync category pages' && git push ) 2>&1";
     unset($output);
