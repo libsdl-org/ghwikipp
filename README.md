@@ -194,7 +194,7 @@ you're a real person. Permit authorization and you'll be back to edit
 the wiki page. (unless you revoke this authorization in GitHub's settings
 or log out, you won't have to see GitHub again for reauthorization).
 
-Just write "hello world" and save it. If you didn't set yourself up as
+* Just write "hello world" and save it. If you didn't set yourself up as
 an admin, you should end up with a pull request on the wiki github repo,
 otherwise you'll get a commit pushed to main (master, whatever) for your
 new change. This will fire GitHub's webhook, which will cause your server
@@ -202,6 +202,10 @@ to recook all the existing wiki data on this first run. If you have a
 big wiki, give it a few minutes. Otherwise, you should be good to go.
 Mark a few people as admins, so they can mark people as trusted to make
 direct pushes instead of pull requests, as appropriate.
+
+* Set up a cronjob to run build_categories.php, if you want the wikibot
+to build category pages and push them. This is an experimental feature
+atm.
 
 
 
