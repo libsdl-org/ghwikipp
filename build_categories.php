@@ -141,13 +141,18 @@ foreach ($categories as $cat => $pages) {
 
     $wrote_list = false;
     while (($line = fgets($in)) !== false) {
+        //print("LINE: [" . trim($line) . "]\n");
         if (trim($line) == '----') {  // the footer? Just stuff the list before it, oh well.
-            write_category_list($out, $pages);
-            $wrote_list = true;
-            fputs($out, '----\n');
+            if (!$wrote_list) {
+                write_category_list($out, $pages);
+                $wrote_list = true;
+            }
+            fputs($out, "----\n");
         } else if (trim($line) == '<!-- BEGIN CATEGORY LIST -->') {
-            write_category_list($out, $pages);
-            $wrote_list = true;
+            if (!$wrote_list) {
+                write_category_list($out, $pages);
+                $wrote_list = true;
+            }
             while (($line = fgets($in)) !== false) {
                 if (trim($line) == '<!-- END CATEGORY LIST -->') {
                     break;
@@ -163,6 +168,7 @@ foreach ($categories as $cat => $pages) {
     if (!$wrote_list) {
         write_category_list($out, $pages);
     }
+
     fclose($out);
 
     if (!rename($tmppath, $path)) {
