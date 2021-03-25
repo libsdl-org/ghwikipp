@@ -13,6 +13,8 @@ $supported_formats = [
     'mediawiki' => 'mediawiki'
 ];
 
+$escrawdata = escapeshellarg($raw_data);
+
 putenv("GIT_SSH_COMMAND=ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -q -i $ssh_key_fname");
 putenv("GIT_COMMITTER_NAME=$git_committer_name");
 putenv("GIT_COMMITTER_EMAIL=$git_committer_email");
