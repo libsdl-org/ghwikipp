@@ -14,6 +14,16 @@ body {
   font-weight: 300;
 }
 
+
+table {
+  border: 3px ridge salmon;
+  border-collapse: collapse;
+}
+
+td {
+  border: 1px solid salmon;
+}
+
 .wikitopbanner {
   background-color: #BFC9D9;
   padding: 10px;
