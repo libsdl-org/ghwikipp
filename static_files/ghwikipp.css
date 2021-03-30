@@ -16,12 +16,13 @@ body {
 
 
 table {
-  border: 3px ridge salmon;
+  border: 3px ridge #333;
   border-collapse: collapse;
 }
 
 td {
-  border: 1px solid salmon;
+  border: 1px solid #333;
+  padding: 5px;
 }
 
 .wikitopbanner {
@@ -47,6 +48,14 @@ td {
 
   a {
     color: #809fff;
+  }
+
+  table {
+    border: 3px ridge #AAAAAA;
+  }
+
+  td {
+    border: 1px solid #AAAAAA;
   }
 
   .wikitopbanner {
