@@ -14,6 +14,10 @@ body {
   font-weight: 300;
 }
 
+div.sourcecode {
+  border: 3px ridge limegreen;
+  background-color: dimgray;
+}
 
 table {
   border: 3px ridge salmon;
