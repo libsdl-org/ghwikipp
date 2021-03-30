@@ -207,5 +207,11 @@ direct pushes instead of pull requests, as appropriate.
 to build category pages and push them. This is an experimental feature
 atm.
 
+* Install codesearch:
+
+```
+sudo apt-get install codesearch
+```
+
 
 

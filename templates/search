@@ -1,0 +1,28 @@
+@include html_standard_intro@
+
+<p><h1>Search</h1></p>
+<p>
+<form action='/wiki/search' method='post'>
+  <input type="text" placeholder="Enter search query here" name="q" value="@query@" />
+  <input type="submit" id="submit" name="submit" value="Submit" />
+</form>
+</p>
+
+<div style='display: @hideifblank@;'>
+<hr/>
+<p><font size='-1'>
+[
+<a href='/wiki/search/?q=@queryurl@'>permalink</a>
+|
+<a href='https://duckduckgo.com/?q=@queryurl@%20site%3A@domain@'>try on duckduckgo</a>
+|
+<a href='https://google.com/search?q=@queryurl@%20site%3A@domain@'>try on google</a>
+]
+</font></p>
+<p><ul>
+@htmllist@
+</ul></p>
+</div>
+
+@include html_footer@
+

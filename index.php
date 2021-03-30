@@ -14,6 +14,7 @@ $operation = NULL;
 putenv("GIT_SSH_COMMAND=ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $ssh_key_fname");
 putenv("GIT_COMMITTER_NAME=$git_committer_name");
 putenv("GIT_COMMITTER_EMAIL=$git_committer_email");
+putenv("CSEARCHINDEX=$cooked_data/.csearchindex");
 
 
 $git_repo_lock_fp = false;
@@ -93,6 +94,7 @@ function get_template($template, $vars=NULL, $safe_to_fail=true)
                    else if ($key == 'page') { return $document; }
                    else if ($key == 'operation') { return $operation; }
                    else if ($key == 'url') { return $_SERVER['PHP_SELF']; }
+                   else if ($key == 'domain') { return $_SERVER['SERVER_NAME']; }
                    else if ($key == 'baseurl') { return $base_url; }
                    else if ($key == 'github_id') { return isset($_SESSION['github_id']) ? $_SESSION['github_id'] : '[not logged in]'; }
                    else if ($key == 'github_user') { return isset($_SESSION['github_user']) ? $_SESSION['github_user'] : '[not logged in]'; }
@@ -307,6 +309,14 @@ function recook_tree($rawbasedir, $cookedbasedir, $dir, &$updated)
     closedir($dirp);
 }
 
+function recook_search_index()
+{
+    global $raw_data;
+    unset($output);
+    $escrawdata = escapeshellarg($raw_data);
+    $failed = (exec("cindex $escrawdata", $output, $result) === false) || ($result != 0);
+    // !!! FIXME: check for failure here.
+}
 
 
 // Stole some of this from https://github.com/dintel/php-github-webhook/blob/master/src/Handler.php
@@ -376,7 +386,8 @@ function github_webhook()
             }
 
             $updated = array();
-            $failed = recook_tree($raw_data, $cooked_data, '', $updated);
+            $failed = false; // !!! FIXME: recook_tree returns void atm
+            recook_tree($raw_data, $cooked_data, '', $updated);
 
             $str .= "\n";
             foreach ($updated as $f) {
@@ -387,6 +398,8 @@ function github_webhook()
             if ($failed) {
                 fail503("$str\nFAILED TO RECOOK DATA!\n", 'fail_plaintext');
             }
+
+            recook_search_index();
 
             $str .= "\nTREE RECOOKED.\n";
         }
@@ -1120,7 +1133,60 @@ if ($operation == 'view') {  // just serve the existing page.
         $htmllist .= "<li><a href='/$p'>$p</a></li>\n";
     }
 
-    print_template('index', [ 'htmllist' => $htmllist ]);
+    print_template('index', [ 'title' => "Index of all pages - $wikiname", 'htmllist' => $htmllist ]);
+
+} else if ($operation == 'search') {
+    // !!! FIXME: move this to a separate function.
+    // !!! FIXME: maybe limit searches to people auth'd with GitHub to prevent server load from crawlers?
+    $query = isset($_REQUEST['q']) ? $_REQUEST['q'] : '';  // let this be a GET option so people can post search URLs.
+    $htmllist = '';
+    $htmlquery = '';
+    $queryurl = '';
+    $hideifblank = 'none';
+    if ($query != '') {
+        $hideifblank = 'inline';
+        $htmlquery = htmlspecialchars($query, ENT_QUOTES|ENT_SUBSTITUTE|ENT_DISALLOWED|ENT_HTML5, 'UTF-8');
+        $queryurl = rawurlencode($query);
+        $escquery = escapeshellarg($query);
+        $cmd = "csearch -i $escquery";
+        unset($output);
+        $failed = (exec($cmd, $output, $result) === false);
+        if ($failed) {
+            fail503('Failed to run search query; please try again later.');
+        }
+
+        $pagehits = array();
+        foreach ($output as $l) {
+            if (preg_match('/^.*\/(.*)\..*?\:(.*)$/', $l, $matches) != 1) { continue; }
+            $p = $matches[1];
+            $txt = $matches[2];
+            if (!isset($pagehits[$p])) {
+                $pagehits[$p] = array();
+            }
+            $pagehits[$p][] = $txt;
+        }
+
+        if (count($pagehits) == 0) {
+            $htmllist .= "<li>No results found.</li>\n";
+        } else {
+            ksort($pagehits, SORT_STRING|SORT_FLAG_CASE);
+            foreach ($pagehits as $p => $txt) {
+                $htmllist .= "<li><a href='/$p'>$p</a>:<dl>\n";
+                $first = true;
+                foreach ($txt as $t) {
+                    $htmltxt = $t; //htmlspecialchars($t, ENT_QUOTES|ENT_SUBSTITUTE|ENT_DISALLOWED|ENT_HTML5, 'UTF-8');
+                    if ($first) {
+                        $first = false;
+                    } else {
+                        $htmllist .= "\n<dt/><dd>...</dd></dl>\n";
+                    }
+                    $htmllist .= "<dt/><dd><pre>$htmltxt</pre></dd>";
+                }
+                $htmllist .= "\n</li>\n";
+            }
+        }
+    }
+    print_template('search', [ 'title' => "Search - $wikiname", 'query' => $htmlquery, 'queryurl' => $queryurl, 'htmllist' => $htmllist, 'hideifblank' => $hideifblank ]);
 
 } else if ($operation == 'logout') {
     require_session();
@@ -1133,10 +1199,13 @@ if ($operation == 'view') {  // just serve the existing page.
 } else if ($operation == 'recook') {  // !!! FIXME: this should be a recookall, and "recook" should just redo $document.
     must_be_admin();
 
+    // !!! FIXME: code duplication with the GitHub webhook.
+
     header('Content-Type: text/plain; charset=utf-8');
     $str = "\nRECOOKING...\n\n";
     $updated = array();
-    $failed = recook_tree($raw_data, $cooked_data, '', $updated);
+    $failed = false; // !!! FIXME: recook_tree returns void atm
+    recook_tree($raw_data, $cooked_data, '', $updated);
     foreach ($updated as $f) {
         $str .= "$f\n";
     }
@@ -1145,6 +1214,8 @@ if ($operation == 'view') {  // just serve the existing page.
     if ($failed) {
         fail503("$str\nFAILED TO RECOOK DATA!\n", 'fail_plaintext');
     }
+
+    recook_search_index();
 
     $str .= "\nTREE RECOOKED.\n";
     print("$str\n");
