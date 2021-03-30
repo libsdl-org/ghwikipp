@@ -1170,6 +1170,12 @@ if ($operation == 'view') {  // just serve the existing page.
             $htmllist .= "<li>No results found.</li>\n";
         } else {
             ksort($pagehits, SORT_STRING|SORT_FLAG_CASE);
+
+            // if the user asked for an exact page match, move it to the start of the array.
+            if (isset($pagehits[$query])) {
+                $pagehits = array($query => $pagehits[$query]) + $pagehits;
+            }
+
             foreach ($pagehits as $p => $txt) {
                 $htmllist .= "<li><a href='/$p'>$p</a>:<dl>\n";
                 $first = true;
