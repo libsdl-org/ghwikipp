@@ -491,7 +491,7 @@ function authorize_with_github($force=false)
 {
     global $github_oauth_clientid;
     global $github_oauth_secret;
-    global $blocked_data, $trusted_data, $admin_data, $always_admin;
+    global $blocked_data, $trusted_data, $admin_data, $always_admin, $base_url;
 
     require_session();
 
@@ -665,7 +665,7 @@ function authorize_with_github($force=false)
     $github_authorize_url = 'https://github.com/login/oauth/authorize';
     redirect($github_authorize_url . '?' . http_build_query([
         'client_id' => $github_oauth_clientid,
-        'redirect_uri' => 'https://testwiki.libsdl.org' . $_SERVER['PHP_SELF'],
+        'redirect_uri' => $base_url . $_SERVER['PHP_SELF'],
         'state' => $_SESSION['github_oauth_state'],
         'scope' => 'user:email'
     ]), 'Sending you to GitHub to log in...');
