@@ -8,6 +8,8 @@
 |
 <a href="/wiki/index">index</a>
 |
+<a href="/wiki/search">search</a>
+|
 <a href="@githuburl@/commits/@githubmainbranch@">recent changes</a>
 |
 <a href="@githuburl@">git repo</a>
