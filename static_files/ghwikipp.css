@@ -18,6 +18,7 @@ div.sourceCode {
   background-color: rgba(128, 128, 128, 0.2);
   border: 3px ridge #333;
   width: fit-content;
+  padding: 1vw;
 }
 
 table {
