@@ -15,7 +15,7 @@ body {
 }
 
 div.sourcecode {
-  border: 3px ridge limegreen;
+  border: 3px ridge #333;
   background-color: dimgray;
 }
 
@@ -47,6 +47,10 @@ td {
   body {
     color: #ddd;
     background-color: #222;
+  }
+
+  div.sourcecode {
+    border: 3px ridge #AAAAAA;
   }
 
   a {
