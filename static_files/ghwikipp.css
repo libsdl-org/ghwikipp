@@ -42,8 +42,8 @@ td {
 /* Text and background color for dark mode */
 @media (prefers-color-scheme: dark) {
   body {
-    color: #ddd;
-    background-color: #222;
+    color: #adbac7;
+    background-color: #22272e;
   }
 
   a {
