@@ -14,48 +14,57 @@ body {
   font-weight: 300;
 }
 
-div.sourcecode {
+div.sourceCode {
   background-color: rgba(128, 128, 128, 0.2);
   border: 3px ridge #333;
   width: fit-content;
 }
 
 table {
-  border: 3px ridge salmon;
+  border: 3px ridge #333;
   border-collapse: collapse;
 }
 
 td {
-  border: 1px solid salmon;
+  border: 1px solid #333;
+  padding: 5px;
 }
 
 .wikitopbanner {
   background-color: #BFC9D9;
   padding: 10px;
   margin-bottom: 10px;
-  width: 100%;
+  width: auto;
 }
 
 .wikibottombanner {
   background-color: #BFC9D9;
   padding: 10px;
   margin-top: 10px;
-  width: 100%;
+  width: auto;
 }
 
 /* Text and background color for dark mode */
 @media (prefers-color-scheme: dark) {
   body {
-    color: #ddd;
-    background-color: #222;
+    color: #adbac7;
+    background-color: #22272e;
   }
 
-  div.sourcecode {
+  div.sourceCode {
     border-color: #AAA;
   }
 
   a {
     color: #809fff;
+  }
+
+  table {
+    border: 3px ridge #AAAAAA;
+  }
+
+  td {
+    border: 1px solid #AAAAAA;
   }
 
   .wikitopbanner {
