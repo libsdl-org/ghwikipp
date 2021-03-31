@@ -14,7 +14,6 @@ body {
   font-weight: 300;
 }
 
-
 table {
   border: 3px ridge #333;
   border-collapse: collapse;
@@ -29,14 +28,14 @@ td {
   background-color: #BFC9D9;
   padding: 10px;
   margin-bottom: 10px;
-  width: 100%;
+  width: auto;
 }
 
 .wikibottombanner {
   background-color: #BFC9D9;
   padding: 10px;
   margin-top: 10px;
-  width: 100%;
+  width: auto;
 }
 
 /* Text and background color for dark mode */
