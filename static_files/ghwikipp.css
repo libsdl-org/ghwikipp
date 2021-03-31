@@ -14,6 +14,9 @@ body {
   font-weight: 300;
 }
 
+div.wikitopbanner, div.wikibottombanner {
+  width: auto;
+}
 
 table {
   border: 3px ridge #333;
