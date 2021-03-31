@@ -14,9 +14,10 @@ body {
   font-weight: 300;
 }
 
-div.sourcecode {
+.sourcecode {
+  background-color: rgba(128, 128, 128, 0.2);
   border: 3px ridge #333;
-  background-color: dimgray;
+  width: fit-content;
 }
 
 table {
@@ -49,8 +50,8 @@ td {
     background-color: #222;
   }
 
-  div.sourcecode {
-    border: 3px ridge #AAAAAA;
+	.sourcecode {
+    border-color: #AAA;
   }
 
   a {
