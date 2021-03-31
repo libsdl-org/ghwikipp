@@ -4,6 +4,7 @@
 
 /* Text and background color for light mode */
 body {
+  padding: 2vw;
   color: #333;
   max-width: 1200px;
   margin: 50px;
