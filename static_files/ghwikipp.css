@@ -2,8 +2,13 @@
   color-scheme: dark light; /* both supported */
 }
 
-/* Text and background color for light mode */
+html {
+  background-color: aliceblue;
+  padding: 20px;
+}
+
 body {
+  background-color: white;
   padding: 2vw;
   color: #333;
   max-width: 1200px;
@@ -41,6 +46,10 @@ td {
 
 /* Text and background color for dark mode */
 @media (prefers-color-scheme: dark) {
+  html {
+    background-color: #000022;
+  }
+
   body {
     color: #adbac7;
     background-color: #22272e;
