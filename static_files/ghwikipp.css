@@ -16,9 +16,9 @@ body {
 
 div.sourceCode {
   background-color: rgba(128, 128, 128, 0.2);
-  border: 3px ridge #333;
+  border: 0.3vmax ridge #333;
   width: fit-content;
-  padding: 1vw;
+  padding: 1vmax;
 }
 
 table {
