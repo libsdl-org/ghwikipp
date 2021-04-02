@@ -1,6 +1,6 @@
 </head><body>
 
-<p><center><font color="#ff0000">
+<p><div class="alertBox"><font color="#ff0000">
 This is new wiki software and old wiki content. It's a work in progress!
 Here's the <a href="https://discourse.libsdl.org/t/wiki-libsdl-org-migration/31085">explanation</a>.
 <br/>
@@ -8,7 +8,7 @@ Be gentle,
 <a href="https://github.com/icculus/ghwikipp/issues/new">report bugs</a>,
 <a href="@githuburl@/issues/new?title=Feedback%20on%20page%20@page@">leave feedback on pages</a>,
 or just <a href='/@page@/edit'>edit</a> them yourself! Thanks!
-</font></center></p>
+</font></div></p>
 
 <div class='wikitopbanner'>
 <font size="+3">@wikiname@</font>
