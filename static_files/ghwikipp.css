@@ -50,6 +50,13 @@ li{
   font-family: serif;
 }
 
+div.sourceCode {
+  background-color: rgba(128, 128, 128, 0.2);
+  border: 0.3vmax ridge #333;
+  width: fit-content;
+  padding: 1vmax;
+}
+
 table {
   border: 3px ridge #333;
   border-collapse: collapse;
@@ -92,6 +99,10 @@ td {
   body {
     color: #adbac7;
     background-color: #22272e;
+  }
+
+  div.sourceCode {
+    border-color: #AAA;
   }
 
   a {
