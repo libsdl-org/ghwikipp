@@ -125,4 +125,17 @@ td {
   .wikibottombanner {
     background-color: #4d6080;
   }
+
+  .anchorImage{
+      visibility: hidden;
+      padding-left: 0.2em;
+  }
+
+  .anchorText{
+      
+  }
+  
+  .anchorText:hover .anchorImage{
+      visibility: visible;
+  }
 }
