@@ -8,3 +8,20 @@ function Link (link)
   return link
 end
 
+function Header(header)
+	if header.level == 2 then
+		local returnHeader = header
+		returnHeader.attributes['class'] = 'anchorText'
+		local svg = pandoc.Image('', 'link.svg')
+		svg.attributes['class'] = 'anchorImage'
+		svg.attributes['width'] = '16'
+		svg.attributes['height'] = '16'
+		local content = pandoc.List(returnHeader.content)
+
+		content:insert(#content + 1, svg)
+
+		returnHeader.content = content
+		return returnHeader
+	end
+	return header
+end
