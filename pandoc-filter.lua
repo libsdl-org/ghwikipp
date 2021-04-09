@@ -12,7 +12,7 @@ function Header(header)
 	if header.level == 2 then
 		local returnHeader = header
 		returnHeader.attributes['class'] = 'anchorText'
-		local svg = pandoc.Image('', 'link.svg')
+		local svg = pandoc.Image('', '/static_files/link.svg')
 		svg.attributes['class'] = 'anchorImage'
 		svg.attributes['width'] = '16'
 		svg.attributes['height'] = '16'
