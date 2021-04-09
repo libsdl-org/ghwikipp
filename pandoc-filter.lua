@@ -16,9 +16,16 @@ function Header(header)
 		svg.attributes['class'] = 'anchorImage'
 		svg.attributes['width'] = '16'
 		svg.attributes['height'] = '16'
+		
+		local link = pandoc.Link('', '#' .. returnHeader.identifier)
+
+		local linkContents = pandoc.List(link.content)
+
+		linkContents:insert(#linkContents + 1, svg)
+
 		local content = pandoc.List(returnHeader.content)
 
-		content:insert(#content + 1, svg)
+		content:insert(#content + 1, link)
 
 		returnHeader.content = content
 		return returnHeader
