@@ -81,7 +81,7 @@ td {
   width: auto;
 }
 
-.alertBox{
+.alertBox {
   background-color: #f8d7da;
   border: 1px solid #f5c6cb;
   max-width: 60%;
@@ -89,6 +89,19 @@ td {
   padding: 10;
   margin:auto;
 }
+
+.anchorImage {
+  visibility: hidden;
+  padding-left: 0.2em;
+}
+
+.anchorText {
+}
+
+.anchorText:hover .anchorImage{
+  visibility: visible;
+}
+
 
 /* Text and background color for dark mode */
 @media (prefers-color-scheme: dark) {
@@ -124,18 +137,5 @@ td {
 
   .wikibottombanner {
     background-color: #4d6080;
-  }
-
-  .anchorImage{
-      visibility: hidden;
-      padding-left: 0.2em;
-  }
-
-  .anchorText{
-      
-  }
-  
-  .anchorText:hover .anchorImage{
-      visibility: visible;
   }
 }
