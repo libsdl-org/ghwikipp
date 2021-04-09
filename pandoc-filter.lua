@@ -9,26 +9,23 @@ function Link (link)
 end
 
 function Header(header)
-	if header.level == 2 then
-		local returnHeader = header
-		returnHeader.attributes['class'] = 'anchorText'
-		local svg = pandoc.Image('', '/static_files/link.svg')
-		svg.attributes['class'] = 'anchorImage'
-		svg.attributes['width'] = '16'
-		svg.attributes['height'] = '16'
+    if header.level == 2 then
+        local returnHeader = header
+        returnHeader.attributes['class'] = 'anchorText'
+        local svg = pandoc.Image('', '/static_files/link.svg')
+        svg.attributes['class'] = 'anchorImage'
+        svg.attributes['width'] = '16'
+        svg.attributes['height'] = '16'
 
-    local link = pandoc.Link('', '#' .. returnHeader.identifier)
+        local link = pandoc.Link('', '#' .. returnHeader.identifier)
+        local linkContents = pandoc.List(link.content)
+        linkContents:insert(#linkContents + 1, svg)
 
-		local linkContents = pandoc.List(link.content)
+        local content = pandoc.List(returnHeader.content)
+        content:insert(#content + 1, link)
 
-		linkContents:insert(#linkContents + 1, svg)
-
-		local content = pandoc.List(returnHeader.content)
-
-		content:insert(#content + 1, link)
-
-		returnHeader.content = content
-		return returnHeader
-	end
-	return header
+        returnHeader.content = content
+        return returnHeader
+    end
+    return header
 end
