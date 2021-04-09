@@ -16,8 +16,8 @@ function Header(header)
 		svg.attributes['class'] = 'anchorImage'
 		svg.attributes['width'] = '16'
 		svg.attributes['height'] = '16'
-		
-		local link = pandoc.Link('', '#' .. returnHeader.identifier)
+
+    local link = pandoc.Link('', '#' .. returnHeader.identifier)
 
 		local linkContents = pandoc.List(link.content)
 
