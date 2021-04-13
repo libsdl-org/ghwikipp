@@ -486,6 +486,11 @@ function call_github_api($url, $args=NULL, $token=NULL, $ispost=false, $failoner
      return $retval;
 }
 
+function endsWith($haystack, $needle)
+{
+    $length = strlen($needle);
+    return $length > 0 ? substr($haystack, -$length) === $needle : true;
+}
 
 function authorize_with_github($force=false)
 {
@@ -587,16 +592,22 @@ function authorize_with_github($force=false)
             $emailresponse = call_github_api('https://api.github.com/user/emails', NULL, $_SESSION['github_access_token'], false, false);
             //print("\n<pre>\nGITHUB USER EMAIL API RESPONSE:\n"); print_r($emailresponse); print("\n</pre>\n\n");
 
+            $fakeemail = NULL;
             $bestemail = NULL;
             if (is_array($emailresponse)) {
                 foreach ($emailresponse as $e) {
                     if (!isset($e['email'])) { continue; }
                     if (!isset($e['visibility'])) { continue; }
-                    if ($e['visibility'] != 'public') { continue; }
+                    if ($e['visibility'] == 'private') { continue; }
                     if ($bestemail == NULL) { $bestemail = $e['email']; }
-                    if ($e == NULL) { $bestemail = $e['email']; }
+                    //if ($e == NULL) { $bestemail = $e['email']; }
                     if (isset($e['primary']) && (((int) $e['primary']) == 1)) { $bestemail = $e['email']; }
+                    if (endsWith($e['email'], '@users.noreply.github.com')) { $fakeemail = $e['email']; }
                 }
+            }
+
+            if ($bestemail == NULL) {
+                $bestemail = $fakeemail;
             }
 
             if ($bestemail == NULL) {
