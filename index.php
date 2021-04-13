@@ -572,8 +572,15 @@ function authorize_with_github($force=false)
             if ( !isset($response['id']) ||
                  !isset($response['login']) ||
                  !isset($response['name']) ) {
+                $msg = "GitHub didn't tell us everything we need to know about you to use this wiki. Please try again later.<br/><br/>\n" .
+                       "<pre>some debug info...\n\n" .
+                       "Response from GitHub:\n" . print_r($response, true) . "\n\n\n" .
+                       "\$_SESSION:\n" . print_r($_SESSION, true) . "\n\n\n" .
+                       "</pre>\n<br/>\n" .
+                       "You can report this bug at the <a href='https://github.com/icculus/ghwikipp/issues/new'>bug tracker</a>" .
+                       " or privately to <a href='mailto:icculus@icculus.org?subject=ghwikipp%20login%20bug'>Ryan's email</a>.\n";
                 unset($_SESSION['github_access_token']);
-                fail503("GitHub didn't tell us everything we need to know about you to use this wiki. Please try again later.");
+                fail503($msg);
             }
 
             // Find a public email, favoring the one marked "primary" if possible.
@@ -596,8 +603,16 @@ function authorize_with_github($force=false)
                 if (isset($response['email'])) {  // take the one from the initial user request, which isn't always set for some reason.
                     $bestemail = $response['email'];
                 } else {
+                    $msg = "GitHub won't tell us your email address, which we need to make edits to the wiki. Check your settings on GitHub?<br/><br/>\n" .
+                           "<pre>some debug info...\n\n" .
+                           "Response from GitHub/user:\n" . print_r($response, true) . "\n\n\n" .
+                           "Response from GitHub/user/emails:\n" . print_r($emailresponse, true) . "\n\n\n" .
+                           "\$_SESSION:\n" . print_r($_SESSION, true) . "\n\n\n" .
+                           "</pre>\n<br/>\n" .
+                           "You can report this bug at the <a href='https://github.com/icculus/ghwikipp/issues/new'>bug tracker</a>" .
+                           " or privately to <a href='mailto:icculus@icculus.org?subject=ghwikipp%20login%20bug'>Ryan's email.</a>\n";
                     unset($_SESSION['github_access_token']);
-                    fail503("GitHub won't tell us your email address, which we need to make edits to the wiki. Check your settings on GitHub?");
+                    fail503($msg);
                 }
             }
 
