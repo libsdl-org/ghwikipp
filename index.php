@@ -565,6 +565,10 @@ function authorize_with_github($force=false)
         if ($response != NULL) {
             //print("\n<pre>\nGITHUB USER API RESPONSE:\n"); print_r($response); print("\n</pre>\n\n");
 
+            if ( !isset($response['name']) ) {
+                $response['name'] = $response['login'];  // real name not given, just use the username instead.
+            }
+
             if ( !isset($response['id']) ||
                  !isset($response['login']) ||
                  !isset($response['name']) ) {
