@@ -9,7 +9,7 @@ function Link (link)
 end
 
 function Header(header)
-    if header.level == 2 then
+    if header.level >= 2 then
         local returnHeader = header
         returnHeader.attributes['class'] = 'anchorText'
         local svg = pandoc.Image('', '/static_files/link.svg')
