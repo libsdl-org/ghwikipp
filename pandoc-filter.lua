@@ -1,8 +1,12 @@
 function Link (link)
   local absolute_path = link.target:sub(1,1) == '/'
   local external_url = not absolute_path and link.target:find("%a+://") == 1
-  -- If it's not an absolute path and not an external URL, make it absolute.
-  if not absolute_path and not external_url then
+  local isInternalSection = link.target:sub(1,1) == '#'
+  if isInternalSection then
+    link.target = link.target:lower()
+  end
+  -- If it's not an absolute path, not an external URL, and not a section link, make it absolute.
+  if not absolute_path and not external_url and not isInternalSection then
     link.target = '/' .. link.target
   end
   return link
