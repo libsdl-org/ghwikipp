@@ -597,10 +597,8 @@ function authorize_with_github($force=false)
             if (is_array($emailresponse)) {
                 foreach ($emailresponse as $e) {
                     if (!isset($e['email'])) { continue; }
-                    if (!isset($e['visibility'])) { continue; }
-                    if ($e['visibility'] == 'private') { continue; }
+                    if (isset($e['visibility']) && ($e['visibility'] == 'private')) { continue; }
                     if ($bestemail == NULL) { $bestemail = $e['email']; }
-                    //if ($e == NULL) { $bestemail = $e['email']; }
                     if (isset($e['primary']) && (((int) $e['primary']) == 1)) { $bestemail = $e['email']; }
                     if (endsWith($e['email'], '@users.noreply.github.com')) { $fakeemail = $e['email']; }
                 }
