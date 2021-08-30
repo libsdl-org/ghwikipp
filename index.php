@@ -798,7 +798,8 @@ function make_new_page_version($page, $ext, $newtext, $comment)
         print_template('pushed_to_main', [ 'hash' => $hash, 'commiturl' => "$github_url/commit/$hash", 'cooked' => $cooked ]);
     } else {  // generate a pull request so we can review before applying.
         $user = $_SESSION['github_user'];
-        $body = "Live page is here: $base_url/$page\n\n" .
+        $body = "This edit was made by @{$user}.\n\n" .
+                "Live page is here: $base_url/$page\n\n" .
                 "If this user should be blocked from further edits, an admin should go to $base_url/$user/block\n" .
                 "If this user should be trusted to make direct pushes to $github_repo_main_branch, without a pull request, an admin should go to $base_url/$user/trust\n";
         $response = call_github_api("https://api.github.com/repos/$github_repo_owner/$github_repo/pulls",
@@ -892,7 +893,8 @@ function delete_page($page, $comment)
         print_template('pushed_to_main', [ 'hash' => $hash, 'commiturl' => "$github_url/commit/$hash", 'cooked' => $cooked ]);
     } else {  // generate a pull request so we can review before applying.
         $user = $_SESSION['github_user'];
-        $body = "Live page is here: $base_url/$page\n\n" .
+        $body = "This edit was made by @{$user}.\n\n" .
+                "Live page is here: $base_url/$page\n\n" .
                 "If this user should be blocked from further edits, an admin should go to $base_url/$user/block\n" .
                 "If this user should be trusted to make direct pushes to $github_repo_main_branch, without a pull request, an admin should go to $base_url/$user/trust\n";
         $response = call_github_api("https://api.github.com/repos/$github_repo_owner/$github_repo/pulls",
