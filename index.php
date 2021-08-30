@@ -722,7 +722,7 @@ function make_new_page_version($page, $ext, $newtext, $comment)
         $comment = 'Updated.';
     }
 
-    $comment = "$page: $comment";
+    $comment = "$page: $comment\n\nLive page is here: $base_url/$page\n\n";
 
     $gitfname = "$raw_data/$page.$ext";
     $escpage = escapeshellarg("$page.$ext");
