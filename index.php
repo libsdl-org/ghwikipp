@@ -722,7 +722,8 @@ function make_new_page_version($page, $ext, $newtext, $comment)
         $comment = 'Updated.';
     }
 
-    $comment = "$page: $comment\n\nLive page is here: $base_url/$page\n\n";
+    $comment = "$page: $comment";
+    $full_comment = "$comment\n\nLive page is here: $base_url/$page\n\n";
 
     $gitfname = "$raw_data/$page.$ext";
     $escpage = escapeshellarg("$page.$ext");
@@ -730,7 +731,7 @@ function make_new_page_version($page, $ext, $newtext, $comment)
 
     obtain_git_repo_lock();
 
-    if (file_put_contents($git_commit_message_file, $comment) != strlen($comment)) {
+    if (file_put_contents($git_commit_message_file, $full_comment) != strlen($full_comment)) {
         unlink($git_commit_message_file);  // just in case.
         fail503('Failed to write new content to disk. Please try again later.');
     }
