@@ -88,7 +88,7 @@ from (we'll call it `$WIKIBOT_EMAIL` in shell commands, later).
 call it `$MY_VHOST_ROOT_DIR` here. Set an environment variable.)
 
 ```
-git clone git@github.com:icculus/ghwikipp.git $MY_VHOST_ROOT_DIR
+git clone git@github.com:libsdl-org/ghwikipp.git $MY_VHOST_ROOT_DIR
 ```
 
 * And clone _your wiki_ under that, in a directory called `raw`:
