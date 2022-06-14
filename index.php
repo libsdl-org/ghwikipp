@@ -718,16 +718,16 @@ function make_new_page_version($page, $ext, $newtext, $comment)
     $newtext = str_replace("\r\n", "\n", $newtext);
     $comment = str_replace("\r\n", "\n", $comment);
 
+    $gitfname = "$raw_data/$page.$ext";
+    $escpage = escapeshellarg("$page.$ext");
+    $escrawdata = escapeshellarg($raw_data);
+
     if ($comment == '') {
-        $comment = 'Updated.';
+        $comment = is_readable($gitfname) ? 'Updated.' : 'Added.';
     }
 
     $comment = "$page: $comment";
     $full_comment = "$comment\n\nLive page is here: $base_url/$page\n\n";
-
-    $gitfname = "$raw_data/$page.$ext";
-    $escpage = escapeshellarg("$page.$ext");
-    $escrawdata = escapeshellarg($raw_data);
 
     obtain_git_repo_lock();
 
