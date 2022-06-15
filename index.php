@@ -991,9 +991,41 @@ $reqargcount = count($reqargs);
 if ( ($reqargcount < 1) || ($reqargs[0] == '') ) {
     $document = 'FrontPage';  // Feed the main wiki page by default.
 } else {
-    $document = $reqargs[0];
-    if (substr($document, 0, 1) == '.') {  // Make sure we don't catch ".git" or ".." or whatever.
-        fail400("Invalid page name '$document'");
+    // eat arguments until we run out of existing subdirectories...
+    $document = '';
+    $sep = '';
+    $drop_args = 0;
+    foreach ($reqargs as $a) {
+        $document .= "$sep$a";
+        $sep = '/';  # set this after first item so there's a separator everywhere but at the start of the string.
+        if (substr($a, 0, 1) == '.') {  // Make sure we don't catch ".git" or ".." or whatever.
+            fail400("Invalid page name '$document'");
+        }
+
+        // Note that this (intentionally!) will not let you create files in subdirectories that don't exist.
+        //  Creating a new subdir should be a significant admin-controlled event. Push through git directly for now.
+        //  We can add UI for it later if we want.
+        if (is_dir("$raw_data/$document")) {
+            $drop_args++;
+        } else {
+            break;  // We're done looking for subdirs.
+        }
+    }
+
+    // drop subdirs from $reqargs, replace $reqargs[0] with the full document path just in case.
+    if ($drop_args > 0) {
+        $reqargcount -= $drop_args;
+        if ($reqargcount == 0) {
+            $document .= '/FrontPage';  // each subdir gets a default FrontPage.
+            $reqargs = array( $document );
+            $drop_args = 0;
+        } else {
+            while ($drop_args > 0) {
+                array_shift($reqargs);  // drop subdirs from $reqargs
+                $drop_args--;
+            }
+            $reqargs[0] = $document;
+        }
     }
 }
 
