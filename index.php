@@ -762,6 +762,7 @@ function make_new_page_version($page, $ext, $newtext, $comment)
         }
     }
 
+    $hash = '';
     $cmd = '';
     $trusted_author = $_SESSION['is_trusted'] || $_SESSION['is_admin'];   // trusted/admin authors push right to main. Untrusted authors generate pull requests.
     $escmain = $github_repo_main_branch;
@@ -774,6 +775,11 @@ function make_new_page_version($page, $ext, $newtext, $comment)
     unset($output);
     $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
     unlink($git_commit_message_file);
+
+    if (!$failed && $trusted_author) {
+        $hash = `cd $escrawdata ; git show-ref -s HEAD`;
+    }
+
     exec("cd $escrawdata && git checkout $escmain && ( git reset --hard HEAD ; git clean -df )");   // just in case.
 
     $cooked = '';
@@ -795,7 +801,6 @@ function make_new_page_version($page, $ext, $newtext, $comment)
     }
 
     if ($trusted_author) {
-        $hash = `cd $escrawdata ; git show-ref -s HEAD`;
         print_template('pushed_to_main', [ 'hash' => $hash, 'commiturl' => "$github_url/commit/$hash", 'cooked' => $cooked ]);
     } else {  // generate a pull request so we can review before applying.
         $user = $_SESSION['github_user'];
@@ -861,6 +866,7 @@ function delete_page($page, $comment)
         fail400("No such page to delete.");
     }
 
+    $hash = '';
     $cmd = '';
 
     $trusted_author = $_SESSION['is_trusted'] || $_SESSION['is_admin'];   // trusted/admin authors push right to main. Untrusted authors generate pull requests.
@@ -874,6 +880,11 @@ function delete_page($page, $comment)
     unset($output);
     $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
     unlink($git_commit_message_file);
+
+    if (!$failed && $trusted_author) {
+        $hash = `cd $escrawdata ; git show-ref -s HEAD`;
+    }
+
     exec("cd $escrawdata && git checkout $escmain && ( git reset --hard HEAD ; git clean -df )");   // just in case.
 
     release_git_repo_lock();
@@ -890,7 +901,6 @@ function delete_page($page, $comment)
     $cooked = '[page deleted]';
 
     if ($trusted_author) {
-        $hash = `cd $escrawdata ; git show-ref -s HEAD`;
         print_template('pushed_to_main', [ 'hash' => $hash, 'commiturl' => "$github_url/commit/$hash", 'cooked' => $cooked ]);
     } else {  // generate a pull request so we can review before applying.
         $user = $_SESSION['github_user'];
