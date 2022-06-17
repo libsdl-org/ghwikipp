@@ -36,8 +36,9 @@ function build_category_lists($srcdir)
     while (($dent = readdir($dirp)) !== false) {
         if (substr($dent, 0, 1) == '.') { continue; }  // skip ".", "..", and metadata.
         $src = "$srcdir/$dent";
-        if (is_dir($src)) {  // !!! FIXME: we don't actually support subdirs elsewhere.
-            build_category_lists($src);
+        if (is_dir($src)) {
+            // categories are per-subdir, don't walk the tree.
+            continue;  //build_category_lists($src);
         } else {
             $ext = strrchr($dent, '.');
 
@@ -103,6 +104,104 @@ function write_category_list($fp, $pages)
     fputs($fp, "<!-- END CATEGORY LIST -->\n");
 }
 
+function find_subdirs($base, $dname, &$output)
+{
+    $dirp = opendir($dname);
+    if ($dirp === false) {
+        return;  // oh well.
+    }
+
+    $sep = ($base == NULL) ? '' : '/';
+
+    while (($dent = readdir($dirp)) !== false) {
+        $path = "$dname/$dent";
+        if (substr($dent, 0, 1) == '.') {
+            continue;  // skip ".", "..", and metadata.
+        } else if (is_dir($path)) {
+            $thisbase = "$base$sep$dent";
+            $output[] = $thisbase;
+            find_subdirs($thisbase, $path, $output);
+        }
+    }
+
+    closedir($dirp);
+
+    return $output;
+}
+
+function handle_subdir($dname)
+{
+    global $categories;
+
+    $categories = array();
+    build_category_lists($dname);
+
+    foreach ($categories as $cat => $pages) {
+        //print("CATEGORY '$cat':\n");
+        //print_r($pages);
+
+        $path = "$dname/$cat.mediawiki";  // for now.
+        $tmppath = "$dname/.$cat.mediawiki.tmp";  // for now.
+        $contents = '';
+        if (!file_exists($path)) {
+            file_put_contents($path, "= $cat =\n\n<!-- BEGIN CATEGORY LIST -->\n<!-- END CATEGORY LIST -->\n\n");
+        }
+
+        $in = fopen($path, "r");
+        if ($in === false) {
+            print("Failed to open '$path' for reading\n");
+            system("cd $escrawdata && git clean -dfq && git checkout -- .");
+            exit(1);
+        }
+
+        $out = fopen($tmppath, "w");
+        if ($out === false) {
+            print("Failed to open '$tmppath' for writing\n");
+            system("cd $escrawdata && git clean -dfq && git checkout -- .");
+            exit(1);
+        }
+
+        $wrote_list = false;
+        while (($line = fgets($in)) !== false) {
+            //print("LINE: [" . trim($line) . "]\n");
+            if (trim($line) == '----') {  // the footer? Just stuff the list before it, oh well.
+                if (!$wrote_list) {
+                    write_category_list($out, $pages);
+                    $wrote_list = true;
+                }
+                fputs($out, "----\n");
+            } else if (trim($line) == '<!-- BEGIN CATEGORY LIST -->') {
+                if (!$wrote_list) {
+                    write_category_list($out, $pages);
+                    $wrote_list = true;
+                }
+                while (($line = fgets($in)) !== false) {
+                    if (trim($line) == '<!-- END CATEGORY LIST -->') {
+                        break;
+                    }
+                }
+            } else {
+                fputs($out, $line);
+            }
+        }
+
+        fclose($in);
+
+        if (!$wrote_list) {
+            write_category_list($out, $pages);
+        }
+
+        fclose($out);
+
+        if (!rename($tmppath, $path)) {
+            unlink($tmppath);
+            print("Failed to rename '$tmppath' to '$path'!\n");
+            system("cd $escrawdata && git clean -dfq && git checkout -- .");
+            exit(1);
+        }
+    }
+}
+
 
 // Mainline!
 
@@ -115,71 +214,12 @@ if ($git_repo_lock_fp === false) {
     exit(1);
 }
 
-build_category_lists($raw_data);
+handle_subdir($raw_data);  // get the root directory.
 
-foreach ($categories as $cat => $pages) {
-    //print("CATEGORY '$cat':\n");
-    //print_r($pages);
-
-    $path = "$raw_data/$cat.mediawiki";  // for now.
-    $tmppath = "$raw_data/.$cat.mediawiki.tmp";  // for now.
-    $contents = '';
-    if (!file_exists($path)) {
-        file_put_contents($path, "= $cat =\n\n<!-- BEGIN CATEGORY LIST -->\n<!-- END CATEGORY LIST -->\n\n");
-    }
-
-    $in = fopen($path, "r");
-    if ($in === false) {
-        print("Failed to open '$path' for reading\n");
-        system("cd $escrawdata && git clean -dfq && git checkout -- .");
-        exit(1);
-    }
-
-    $out = fopen($tmppath, "w");
-    if ($out === false) {
-        print("Failed to open '$tmppath' for writing\n");
-        system("cd $escrawdata && git clean -dfq && git checkout -- .");
-        exit(1);
-    }
-
-    $wrote_list = false;
-    while (($line = fgets($in)) !== false) {
-        //print("LINE: [" . trim($line) . "]\n");
-        if (trim($line) == '----') {  // the footer? Just stuff the list before it, oh well.
-            if (!$wrote_list) {
-                write_category_list($out, $pages);
-                $wrote_list = true;
-            }
-            fputs($out, "----\n");
-        } else if (trim($line) == '<!-- BEGIN CATEGORY LIST -->') {
-            if (!$wrote_list) {
-                write_category_list($out, $pages);
-                $wrote_list = true;
-            }
-            while (($line = fgets($in)) !== false) {
-                if (trim($line) == '<!-- END CATEGORY LIST -->') {
-                    break;
-                }
-            }
-        } else {
-            fputs($out, $line);
-        }
-    }
-
-    fclose($in);
-
-    if (!$wrote_list) {
-        write_category_list($out, $pages);
-    }
-
-    fclose($out);
-
-    if (!rename($tmppath, $path)) {
-        unlink($tmppath);
-        print("Failed to rename '$tmppath' to '$path'!\n");
-        system("cd $escrawdata && git clean -dfq && git checkout -- .");
-        exit(1);
-    }
+$subdirs = array();
+find_subdirs(NULL, $raw_data, $subdirs);
+foreach ($subdirs as $d) {
+    handle_subdir("$raw_data/$d");
 }
 
 unset($output);
