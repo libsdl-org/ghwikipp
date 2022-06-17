@@ -982,6 +982,45 @@ function confirm_action_on_user($action, $user, $statedir, $explanation)
     ]);
 }
 
+// this does not hold the git repo lock (but YOU SHOULD) and does not
+// sort the output (BUT YOU SHOULD).
+function build_index($base, $dname, &$output)
+{
+    global $supported_formats;
+
+    //print("build_index base='$base' dname='$dname'\n");
+
+    $dirp = opendir($dname);
+    if ($dirp === false) {
+        fail503('Failed to read directory index; please try again later.');
+    }
+
+    $sep = ($base == NULL) ? '' : '/';
+
+    while (($dent = readdir($dirp)) !== false) {
+        //print("dent='$dent'\n");
+        if (substr($dent, 0, 1) == '.') {
+            continue;  // skip ".", "..", and metadata.
+        } else if (is_dir("$dname/$dent")) {
+            build_index("$base$sep$dent", "$dname/$dent", $output);
+            continue;
+        } else if (preg_match('/^(.*)\.(.*)$/', $dent, $matches) != 1) {
+            continue;
+        }
+        $pagename = $matches[1];
+        $ext = $matches[2];
+        if (!isset($supported_formats[$ext])) { continue; }
+        //print("Adding page '$base$sep$pagename'\n");
+        $output[] = "$base$sep$pagename";
+    }
+
+    closedir($dirp);
+
+    //print("done with base='$base'\n");
+
+    return $output;
+}
+
 
 // Main line!
 
@@ -1183,21 +1222,8 @@ if ($operation == 'view') {  // just serve the existing page.
 
 } else if ($operation == 'index') {
     obtain_git_repo_lock();
-    $dirp = opendir($raw_data);
-    if ($dirp === false) {
-        fail503('Failed to read directory index; please try again later.');
-    }
-
     $pagelist = array();
-    while (($dent = readdir($dirp)) !== false) {
-        if (substr($dent, 0, 1) == '.') { continue; }  // skip ".", "..", and metadata.
-        if (preg_match('/^(.*)\.(.*)$/', $dent, $matches) != 1) { continue; }
-        $pagename = $matches[1];
-        $ext = $matches[2];
-        if (!isset($supported_formats[$ext])) { continue; }
-        $pagelist[] = $pagename;
-    }
-    closedir($dirp);
+    build_index(NULL, $raw_data, $pagelist);
     release_git_repo_lock();
 
     $htmllist = '';
