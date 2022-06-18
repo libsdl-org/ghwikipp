@@ -1024,6 +1024,14 @@ function build_index($base, $dname, &$output)
 
 // Main line!
 
+// can't have a '/' at the end of the URL or we'll generate incorrect links.
+$stripped_url = preg_replace('/\/+$/', '', $_SERVER['PHP_SELF'], -1, $count);
+if ($count && ($stripped_url != '')) {
+    redirect($stripped_url);
+}
+unset($count);
+unset($stripped_url);
+
 $reqargs = explode('/', preg_replace('/^\/?(.*?)\/?$/', '$1', $_SERVER['PHP_SELF']));
 $reqargcount = count($reqargs);
 
