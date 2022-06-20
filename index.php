@@ -1030,7 +1030,6 @@ if ($count && ($stripped_url != '')) {
     redirect($stripped_url);
 }
 unset($count);
-unset($stripped_url);
 
 $reqargs = explode('/', preg_replace('/^\/?(.*?)\/?$/', '$1', $_SERVER['PHP_SELF']));
 $reqargcount = count($reqargs);
@@ -1063,9 +1062,9 @@ if ( ($reqargcount < 1) || ($reqargs[0] == '') ) {
     if ($drop_args > 0) {
         $reqargcount -= $drop_args;
         if ($reqargcount == 0) {
-            $document .= '/FrontPage';  // each subdir gets a default FrontPage.
-            $reqargs = array( $document );
-            $drop_args = 0;
+            // each subdir gets a default FrontPage. Redirect to it so there's
+            // no confusion about relative URLs on the page going to the right subdir.
+            redirect("$stripped_url/FrontPage");
         } else {
             while ($drop_args > 0) {
                 array_shift($reqargs);  // drop subdirs from $reqargs
