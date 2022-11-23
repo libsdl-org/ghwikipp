@@ -29,6 +29,7 @@ p {
 
 a, a:visited {
   color: #307ABD;
+  text-decoration: none;
 }
 
 a:active {
