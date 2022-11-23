@@ -96,7 +96,7 @@ code {
   border-radius: 4px;
 }
 
-pre {
+div.sourceCode {
   background-color: #fff;
   padding: 0.75em;
   line-height: 1.25em;
@@ -105,7 +105,7 @@ pre {
   border-radius: 4px;
 }
 
-pre code {
+div.sourceCode code {
   background-color: transparent;
 }
 
@@ -209,7 +209,7 @@ hr {
     background-color: #111;
   }
   
-  pre {
+  div.sourceCode {
     background-color: #111;
     border-color: #333;
     border-bottom-color: #444;
