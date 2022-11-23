@@ -3,91 +3,162 @@
 }
 
 html {
-  background-color: aliceblue;
-  padding: 20px;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background-color: white;
-  padding: 2vw;
-  color: #333;
-  max-width: 1200px;
-  margin: 50px;
-  margin-left: auto;
-  margin-right: auto;
-  font-size: 16px;
-  line-height: 1.3;
-  font-family: sans-serif;
-  overflow-wrap: break-word;
+  font-family: 'Helvetica Neue', sans-serif;
+  background: #eee;
+  color: #444;
+  margin: 2em auto;
+  padding: 0 2em;
+  max-width: 48em;
+  line-height: 1.6em;
+  font-size: 1.0em;
 }
 
-a{
-  color: #307ABD;
+img {
+  margin: 0;
+  border: 0;
+}
+
+p {
+  margin: 1em 0;
+}
+
+a {
+  color: #00213D;
+}
+
+a:visited {
+  color: #00213D;
+}
+
+a:active {
+  color: #3b7d4f;
+}
+
+a:hover {
   text-decoration: none;
 }
 
-h1{
-  border-bottom: 2px solid #efefef;
+h1, h2, h3, h4, h5, h6 {
+  color: #3a3f5e;
+  margin: 1em 0 .25em 0;
+  font-weight: normal;
 }
 
-h2{
-  border-bottom: 1px solid #efefef;
+h1 {
+  font-size: 1.8em;
 }
 
-p{
-  max-width: 85ch;
-  font-family: serif;
+h2 {
+  font-size: 1.6em;
 }
 
-ul{
-  list-style-type: none;
+h3 {
+  font-size: 1.4em;
 }
 
-li{
-  margin-top: 1em;
-  margin-bottom: 1em;
-  max-width: 85ch;
-  font-family: serif;
+h4 {
+  font-size: 1.1em;
 }
 
-div.sourceCode {
-  background-color: rgba(128, 128, 128, 0.2);
-  border: 0.3vmax ridge #333;
-  width: fit-content;
-  padding: 1vmax;
+h5 {
+  font-size: 1.0em;
+}
+
+/* todo: hack: h6 is used for the documentation legacy notice */
+h6 {
+  font-size: 1.0em;
+  text-align: center;
+  padding: 1em;
+  border: 2px solid #4c6885;
+  color: #4c6885;
+  border-radius: 4px;
+}
+
+dt {
+  font-style: italic;
+}
+
+dd {
+  margin-bottom: 0.5em;
+}
+
+code {
+  padding: 0.2em;
+  background-color: #fff;
+  border-radius: 4px;
+}
+
+pre {
+  background-color: #fff;
+  padding: 0.75em;
+  line-height: 1.25em;
+  font-size: 1.25em;
+  border: 1px solid #ddd;
+  border-bottom: 1px solid #ccc;
+  border-radius: 4px;
 }
 
 table {
-  border: 3px ridge #333;
-  border-collapse: collapse;
+  width: 100%;
+  border: 1px solid #ddd;
+  border-bottom: 1px solid #ccc;
+  border-radius: 4px;
+  border-spacing: 0;
+}
+
+tr:nth-child(even) {
+  background: #e4e4e4;
 }
 
 td {
-  border: 1px solid #333;
-  padding: 5px;
+  padding: 0 0.5em;
+}
+
+td:not(:last-child) { 
+  border-right: 1px solid #ddd;
+}
+
+hr {
+  display: block;
+  height: 1px;
+  border: 0; 
+  border-top: 2px dashed #888;
+  margin: 1em 0; 
+  padding: 0; 
 }
 
 .wikitopbanner {
-  background-color: #efefef;
-  padding: 10px;
-  margin-bottom: 10px;
-  width: auto;
+  padding: .5em 1em .5em 1em;
+  font-weight: bold;
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.wikitopbanner a, .wikitopbanner a:visited {
+  color: inherit;
+  text-decoration: inherit;
 }
 
 .wikibottombanner {
-  background-color: #efefef;
-  padding: 10px;
-  margin-top: 10px;
-  width: auto;
+  margin-top: 1em;
+  padding: .5em 1em .5em 1em;
+  background: #ccc;
+  border-radius: 4px;
+  color: #666;
 }
 
 .alertBox {
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  max-width: 60%;
-  line-height: 1.5em;
-  padding: 10;
-  margin:auto;
+  font-size: 1.0em;
+  text-align: center;
+  padding: 1em;
+  border: 2px solid #781d4f;
+  color: #781d4f;
+  border-radius: 4px;
 }
 
 .anchorImage {
@@ -102,40 +173,70 @@ td {
   visibility: visible;
 }
 
-
 /* Text and background color for dark mode */
 @media (prefers-color-scheme: dark) {
-  html {
-    background-color: #000022;
-  }
 
   body {
-    color: #adbac7;
-    background-color: #22272e;
+    background-color: #181818;
+    color: #bbb;
+  }
+  
+  a, a:visited {
+    color: #4fa4b8;
   }
 
-  div.sourceCode {
-    border-color: #AAA;
+  a:active {
+    color: #3b7d4f;
   }
-
-  a {
-    color: #809fff;
-    text-decoration: none;
+  
+  h1, h2, h3, h4, h5, h6 {
+    color: #a1b9c5;
   }
-
+  
+  /* todo: hack: h6 is used for the documentation legacy notice */
+  h6 {
+    border: 2px solid #4c6885;
+    color: #4c6885;
+  }
+  
+  code {
+    background-color: #111;
+  }
+  
+  pre {
+    background-color: #111;
+    border-color: #333;
+    border-bottom-color: #444;
+  }
+  
   table {
-    border: 3px ridge #AAAAAA;
+    border-color: #333;
+    border-bottom-color: #444;
   }
-
-  td {
-    border: 1px solid #AAAAAA;
+  
+  tr:nth-child(even) {
+    background-color: #222;
   }
-
+  
+  td:not(:last-child) { 
+    border-right-color: #333;
+  }
+  
+  hr {
+    border-top-color:#444;
+  }
+  
   .wikitopbanner {
-    background-color: #4d6080;
+    background-color: #333;
   }
-
+  
   .wikibottombanner {
-    background-color: #4d6080;
+    background-color: #333;
+    color: #ccc;
+  }
+  
+  .alertBox {
+    border-color: #781d4f;
+    color: #781d4f;
   }
 }

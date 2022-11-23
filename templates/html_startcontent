@@ -10,5 +10,5 @@ or just <a href='/@page@/edit'>edit</a> them yourself! Thanks!
 </center></font></div></p>-->
 
 <div class='wikitopbanner'>
-<a href="@baseurl@" style="color: inherit; text-decoration: inherit;"><font size="+3">@wikiname@</font></a>
+<a href="@baseurl@">@wikiname@</a>
 </div>
