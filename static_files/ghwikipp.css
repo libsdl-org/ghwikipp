@@ -27,11 +27,7 @@ p {
   margin: 1em 0;
 }
 
-a {
-  color: #00213D;
-}
-
-a:visited {
+a, a:visited {
   color: #00213D;
 }
 
@@ -177,12 +173,12 @@ hr {
 @media (prefers-color-scheme: dark) {
 
   body {
-    background-color: #181818;
-    color: #bbb;
+    background-color: #1a1a1a;
+    color: #aaa;
   }
   
   a, a:visited {
-    color: #4fa4b8;
+    color: #408fa1;
   }
 
   a:active {
