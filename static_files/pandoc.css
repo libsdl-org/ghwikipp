@@ -34,6 +34,7 @@ div.sourceCode
 @media screen {
 a.sourceLine::before { text-decoration: underline; }
 }
+
 code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
 code span.at { color: #7d9029; } /* Attribute */
@@ -63,3 +64,35 @@ code span.st { color: #4070a0; } /* String */
 code span.va { color: #19177c; } /* Variable */
 code span.vs { color: #4070a0; } /* VerbatimString */
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+@media (prefers-color-scheme: dark) {
+  code span.al { color: #95da4c; font-weight: bold; } /* Alert */
+  code span.an { color: #3f8058; } /* Annotation */
+  code span.at { color: #2980b9; } /* Attribute */
+  code span.bn { color: #f67400; } /* BaseN */
+  code span.bu { color: #7f8c8d; } /* BuiltIn */
+  code span.ch { color: #3daee9; } /* Char */
+  code span.co { color: #7a7c7d; } /* Comment */
+  code span.cv { color: #7f8c8d; } /* CommentVar */
+  code span.cn { color: #27aeae; font-weight: bold; } /* Constant */
+  code span.cf { color: #fdbc4b; font-weight: bold; } /* ControlFlow */
+  code span.dt { color: #2980b9; } /* DataType */
+  code span.dv { color: #f67400; } /* DecVal */
+  code span.do { color: #a43340; } /* Documentation */
+  code span.er { color: #da4453; } /* Error */
+  code span.ex { color: #0099ff; font-weight: bold; } /* Extension */
+  code span.fl { color: #f67400; } /* Float */
+  code span.fu { color: #8e44ad; } /* Function */
+  code span.im { color: #27ae60; } /* Import */
+  code span.in { color: #c45b00; } /* Information */
+  code span.kw { color: #cfcfc2; font-weight: bold; } /* Keyword */
+  code span.op { color: #cfcfc2; } /* Operator */
+  code span.ot { color: #27ae60; } /* Other */
+  code span.pp { color: #27ae60; } /* Preprocessor */
+  code span.sc { color: #3daee9; } /* SpecialChar */
+  code span.ss { color: #da4453; } /* SpecialString */
+  code span.st { color: #f44f4f; } /* String */
+  code span.va { color: #27aeae; } /* Variable */
+  code span.vs { color: #da4453; } /* VerbatimString */
+  code span.wa { color: #da4453; } /* Warning */
+}
