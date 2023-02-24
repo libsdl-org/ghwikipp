@@ -177,13 +177,13 @@ function handle_subdir($dname)
             //print("LINE: [" . trim($line) . "]\n");
             if (trim($line) == '----') {  // the footer? Just stuff the list before it, oh well.
                 if (!$wrote_list) {
-                    write_category_list($out, $pages);
+                    write_category_list($out, $pages, $ismediawiki);
                     $wrote_list = true;
                 }
                 fputs($out, "----\n");
             } else if (trim($line) == '<!-- BEGIN CATEGORY LIST -->') {
                 if (!$wrote_list) {
-                    write_category_list($out, $pages);
+                    write_category_list($out, $pages, $ismediawiki);
                     $wrote_list = true;
                 }
                 while (($line = fgets($in)) !== false) {
