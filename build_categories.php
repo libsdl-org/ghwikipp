@@ -85,7 +85,7 @@ function build_category_lists($srcdir)
     closedir($dirp);
 }
 
-function write_category_list($fp, $pages)
+function write_category_list($fp, $pages, $ismediawiki)
 {
     ksort($pages, SORT_STRING|SORT_FLAG_CASE);
     fputs($fp, "<!-- BEGIN CATEGORY LIST -->\n");
@@ -99,7 +99,11 @@ function write_category_list($fp, $pages)
             fputs($fp, "* $letter\n");
         }
         */
-        fputs($fp, "* [[$p]]\n");  // !!! FIXME: mediawiki, for now.
+        if ($ismediawiki) {
+            fputs($fp, "* [[$p]]\n");
+        } else {
+            fputs($fp, "- [$p]($p)\n");
+        }
     }
     fputs($fp, "<!-- END CATEGORY LIST -->\n");
 }
@@ -140,12 +144,19 @@ function handle_subdir($dname)
         //print("CATEGORY '$cat':\n");
         //print_r($pages);
 
-        $path = "$dname/$cat.mediawiki";  // for now.
-        $tmppath = "$dname/.$cat.mediawiki.tmp";  // for now.
-        $contents = '';
+        // keep in MediaWiki format if it exists, start new pages in Markdown.
+        $ismediawiki = true;
+        $path = "$dname/$cat.mediawiki";
         if (!file_exists($path)) {
-            file_put_contents($path, "= $cat =\n\n<!-- BEGIN CATEGORY LIST -->\n<!-- END CATEGORY LIST -->\n\n");
+            $ismediawiki = false;
+            $path = "$dname/$cat.md";
+            if (!file_exists($path)) {
+                file_put_contents($path, "# $cat\n\n<!-- BEGIN CATEGORY LIST -->\n<!-- END CATEGORY LIST -->\n\n");
+            }
         }
+
+        $tmppath = "$path.tmp";
+        $contents = '';
 
         $in = fopen($path, "r");
         if ($in === false) {
@@ -188,7 +199,7 @@ function handle_subdir($dname)
         fclose($in);
 
         if (!$wrote_list) {
-            write_category_list($out, $pages);
+            write_category_list($out, $pages, $ismediawiki);
         }
 
         fclose($out);
