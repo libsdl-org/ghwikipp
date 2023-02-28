@@ -64,20 +64,34 @@ function build_category_lists($srcdir)
 
             while (($line = fgets($fp)) !== false) {
                 // The categories come right after a '----' line.
+
+                // Strictly speaking, it's legal in Markdown to do:
+                //
+                // My sub-header
+                // -------------
+                //
+                // (which is equivalent to "# My sub-header" on a single line.)
+                // ...so this can catch nonsense if the sub-header is four chars long,
+                // but we attempt to mitigate.
                 if (trim($line) == '----') {
                     if (($line = fgets($fp)) !== false) {
                         $cats = explode(',', trim($line));
                         foreach ($cats as $c) {
+                            $c = trim($c);
+                            $count = 0;
                             if ($from_format == "mediawiki") {
-                                $c = preg_replace('/^\[\[(.*?)\]\]$/', '$1', trim($c));
+                                $c = preg_replace('/^\[\[(.*?)\]\]$/', '$1', $c, 1, $count);
                             } else if ($from_format == "markdown_github") {
-                                $c = preg_replace('/^\[(.*?)\]\(.*?\)$/', '$1', trim($c));
+                                $c = preg_replace('/^\[(.*?)\]\(.*?\)$/', '$1', $c, 1, $count);
                             }
-                            if (!isset($categories[$c])) {
-                                $categories[$c] = array();
+                            // currently we have pages that don't have these wikilinked, so don't check $count==1 here for now.
+                            if (/*($count == 1) &&*/ ($c != "")) {
+                                if (!isset($categories[$c])) {
+                                    $categories[$c] = array();
+                                }
+                                //print("Adding '$page' to '$c'\n");
+                                $categories[$c][$page] = true;
                             }
-                            //print("Adding '$page' to '$c'\n");
-                            $categories[$c][$page] = true;
                         }
                     }
                 }
@@ -145,7 +159,7 @@ function handle_subdir($dname)
     build_category_lists($dname);
 
     foreach ($categories as $cat => $pages) {
-        //print("CATEGORY '$cat':\n");
+        //print("DIR '$dname' CATEGORY '$cat':\n");
         //print_r($pages);
 
         // keep in MediaWiki format if it exists, start new pages in Markdown.
