@@ -68,7 +68,11 @@ function build_category_lists($srcdir)
                     if (($line = fgets($fp)) !== false) {
                         $cats = explode(',', trim($line));
                         foreach ($cats as $c) {
-                            $c = preg_replace('/^\[\[(.*?)\]\]$/', '$1', trim($c));
+                            if ($from_format == "mediawiki") {
+                                $c = preg_replace('/^\[\[(.*?)\]\]$/', '$1', trim($c));
+                            } else if ($from_format == "md") {
+                                $c = preg_replace('/^\[(.*?)\]\(.*?\)$/', '$1', trim($c));
+                            }
                             if (!isset($categories[$c])) {
                                 $categories[$c] = array();
                             }
