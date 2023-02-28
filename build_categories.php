@@ -70,7 +70,7 @@ function build_category_lists($srcdir)
                         foreach ($cats as $c) {
                             if ($from_format == "mediawiki") {
                                 $c = preg_replace('/^\[\[(.*?)\]\]$/', '$1', trim($c));
-                            } else if ($from_format == "md") {
+                            } else if ($from_format == "markdown_github") {
                                 $c = preg_replace('/^\[(.*?)\]\(.*?\)$/', '$1', trim($c));
                             }
                             if (!isset($categories[$c])) {
