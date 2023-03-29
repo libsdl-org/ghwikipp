@@ -13,6 +13,16 @@ $supported_formats = [
     'mediawiki' => 'mediawiki'
 ];
 
+// Category pages have a main list in a <!-- BEGIN CATEGORY LIST --> section.
+// Category pages can have sub-lists of pages that are also in another category.
+// These pages are not included in the main list.
+// e.g., CategoryEnum in a separate list in <!-- BEGIN ENUM LIST --> section.
+$sublists = [
+    'ENUM' => 'CategoryEnum',
+    'STRUCT' => 'CategoryStruct'
+];
+
+
 $escrawdata = escapeshellarg($raw_data);
 
 putenv("GIT_SSH_COMMAND=ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -q -i $ssh_key_fname");
@@ -103,10 +113,10 @@ function build_category_lists($srcdir)
     closedir($dirp);
 }
 
-function write_category_list($fp, $pages, $ismediawiki)
+function write_category_list($fp, $listname, $pages, $ismediawiki)
 {
     ksort($pages, SORT_STRING|SORT_FLAG_CASE);
-    fputs($fp, "<!-- BEGIN CATEGORY LIST -->\n");
+    fputs($fp, "<!-- BEGIN $listname LIST -->\n");
     //$last_letter = '';
     foreach ($pages as $p => $unused) {
         // this isn't super-useful when everything starts with "SDL_"  :)
@@ -123,7 +133,7 @@ function write_category_list($fp, $pages, $ismediawiki)
             fputs($fp, "- [$p]($p)\n");
         }
     }
-    fputs($fp, "<!-- END CATEGORY LIST -->\n");
+    fputs($fp, "<!-- END $listname LIST -->\n");
 }
 
 function find_subdirs($base, $dname, &$output)
@@ -153,7 +163,7 @@ function find_subdirs($base, $dname, &$output)
 
 function handle_subdir($dname)
 {
-    global $categories;
+    global $categories, $sublists;
 
     $categories = array();
     build_category_lists($dname);
@@ -190,18 +200,42 @@ function handle_subdir($dname)
             exit(1);
         }
 
+        $sub_pages = array();
+        $wrote_sub_list = array();
+        foreach($sublists as $listname => $subcat) {
+            $sub_pages[$listname] = array();
+            $wrote_sub_list[$listname] = false;
+
+            if ($cat !== $subcat && !empty($categories[$subcat])) {
+                $sub_pages[$listname] = array_intersect_assoc($pages, $categories[$subcat]);
+            }
+
+            // Remove sub category pages from the main category list
+            $pages = array_diff_assoc($pages, $sub_pages[$listname]);
+        }
+
         $wrote_list = false;
         while (($line = fgets($in)) !== false) {
             //print("LINE: [" . trim($line) . "]\n");
             if (trim($line) == '----') {  // the footer? Just stuff the list before it, oh well.
+                foreach($sublists as $listname => $subcat) {
+                    if (!$wrote_sub_list[$listname] && !empty($sub_pages[$listname])) {
+                        write_category_list($out, $listname, $sub_pages[$listname], $ismediawiki);
+                        fputs($out, "\n");
+                        $wrote_sub_list[$listname] = true;
+                    }
+                }
+
                 if (!$wrote_list) {
-                    write_category_list($out, $pages, $ismediawiki);
+                    write_category_list($out, 'CATEGORY', $pages, $ismediawiki);
+                    fputs($out, "\n");
                     $wrote_list = true;
                 }
+
                 fputs($out, "----\n");
             } else if (trim($line) == '<!-- BEGIN CATEGORY LIST -->') {
                 if (!$wrote_list) {
-                    write_category_list($out, $pages, $ismediawiki);
+                    write_category_list($out, 'CATEGORY', $pages, $ismediawiki);
                     $wrote_list = true;
                 }
                 while (($line = fgets($in)) !== false) {
@@ -210,14 +244,45 @@ function handle_subdir($dname)
                     }
                 }
             } else {
-                fputs($out, $line);
+                $trimedline = trim($line);
+                $foundList = false;
+                if (substr($trimedline, 0, 11) === "<!-- BEGIN ") {
+                    foreach($sublists as $listname => $subcat) {
+                        if ($trimedline == "<!-- BEGIN $listname LIST -->") {
+                            if (!$wrote_sub_list[$listname]) {
+                                write_category_list($out, $listname, $sub_pages[$listname], $ismediawiki);
+                                $wrote_sub_list[$listname] = true;
+                            }
+                            while (($line = fgets($in)) !== false) {
+                                if (trim($line) == "<!-- END $listname LIST -->") {
+                                    break;
+                                }
+                            }
+
+                            $foundList = true;
+                            break;
+                        }
+                    }
+                }
+
+                if ($foundList === false) {
+                    fputs($out, $line);
+                }
             }
         }
 
         fclose($in);
 
+        foreach($sublists as $listname => $subcat) {
+            if (!$wrote_sub_list[$listname] && !empty($sub_pages[$listname])) {
+                write_category_list($out, $listname, $sub_pages[$listname], $ismediawiki);
+                fputs($out, "\n");
+            }
+        }
+
         if (!$wrote_list) {
-            write_category_list($out, $pages, $ismediawiki);
+            write_category_list($out, 'CATEGORY', $pages, $ismediawiki);
+            fputs($out, "\n");
         }
 
         fclose($out);
