@@ -12,7 +12,7 @@
 <hr/>
 <p><font size='-1'>
 [
-<a href='/wiki/search/?q=@queryurl@'>permalink</a>
+<a href='/wiki/search?q=@queryurl@'>permalink</a>
 |
 <a href='https://duckduckgo.com/?q=@queryurl@%20site%3A@domain@'>try on duckduckgo</a>
 |
