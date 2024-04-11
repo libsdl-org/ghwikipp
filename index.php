@@ -1263,7 +1263,7 @@ if ($operation == 'view') {  // just serve the existing page.
 
         $pagehits = array();
         foreach ($output as $l) {
-            if (preg_match('/^.*\/(.*)\..*?\:(.*)$/', $l, $matches) != 1) { continue; }
+            if (preg_match("/^.*\/$raw_data\/(.*)\..*?\:(.*)$/", $l, $matches) != 1) { continue; }
             $p = $matches[1];
             $txt = $matches[2];
             if (!isset($pagehits[$p])) {
