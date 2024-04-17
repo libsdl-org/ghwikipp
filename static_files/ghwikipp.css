@@ -2,69 +2,70 @@
   color-scheme: dark light; /* both supported */
 }
 
-html {
-  background-color: aliceblue;
-  padding: 20px;
-}
-
 body {
   background-color: white;
   padding: 2vw;
   color: #333;
   max-width: 1200px;
-  margin: 50px;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0 auto;
   font-size: 16px;
-  line-height: 1.3;
-  font-family: sans-serif;
+  line-height: 1.5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
+    Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   overflow-wrap: break-word;
 }
 
-a{
-  color: #307ABD;
-  text-decoration: none;
+a {
+  color: #0969da;
+  /* text-decoration: none; */
 }
 
-h1{
+a:visited {
+  color: #064998;
+}
+
+h1 {
   border-bottom: 2px solid #efefef;
 }
 
-h2{
+h2 {
   border-bottom: 1px solid #efefef;
 }
 
-p{
+p {
   max-width: 85ch;
-  font-family: serif;
 }
 
-ul{
-  list-style-type: none;
-}
-
-li{
-  margin-top: 1em;
-  margin-bottom: 1em;
+li {
   max-width: 85ch;
-  font-family: serif;
 }
 
 div.sourceCode {
-  background-color: rgba(128, 128, 128, 0.2);
-  border: 0.3vmax ridge #333;
+  background-color: #f6f8fa;
   width: fit-content;
-  padding: 1vmax;
+  padding: 16px;
+}
+
+code {
+  background-color: #f6f8fa;
+  padding: 2px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  font-size: 90%;
 }
 
 table {
-  border: 3px ridge #333;
+  border: 1px solid #808080;
   border-collapse: collapse;
 }
 
 td {
-  border: 1px solid #333;
+  border: 1px solid #808080;
   padding: 5px;
+}
+
+tr:nth-child(even) {
+  background-color: #f6f8fa;
 }
 
 .wikitopbanner {
@@ -85,58 +86,85 @@ td {
   background-color: #f8d7da;
   border: 1px solid #f5c6cb;
   max-width: 60%;
-  line-height: 1.5em;
   padding: 10;
-  margin:auto;
+  margin: auto;
 }
 
 .anchorImage {
   visibility: hidden;
   padding-left: 0.2em;
+  color: #fff;
 }
 
-.anchorText {
-}
-
-.anchorText:hover .anchorImage{
+.anchorText:hover .anchorImage {
   visibility: visible;
 }
 
+hr {
+  display: block;
+  height: 1px;
+  border: 0;
+  border-top: 1px solid #efefef;
+  margin: 1em 0;
+  padding: 0;
+}
 
 /* Text and background color for dark mode */
 @media (prefers-color-scheme: dark) {
-  html {
-    background-color: #000022;
+  body {
+    color: #e6edf3;
+    background-color: #0d1117;
   }
 
-  body {
-    color: #adbac7;
-    background-color: #22272e;
+  h1 {
+    border-color: rgba(48, 54, 61, 0.7);
+  }
+
+  h2 {
+    border-color: rgba(48, 54, 61, 0.7);
+  }
+
+  hr {
+    border-color: rgba(48, 54, 61, 0.7);
   }
 
   div.sourceCode {
-    border-color: #AAA;
-    background-color: #232629;
+    background-color: #161b22;
+  }
+
+  code {
+    background-color: #161b22;
   }
 
   a {
-    color: #809fff;
-    text-decoration: none;
+    color: #4493f8;
+  }
+
+  a:visited {
+    color: #2f66ad;
   }
 
   table {
-    border: 3px ridge #AAAAAA;
+    border-color: rgba(48, 54, 61, 0.7);
   }
 
   td {
-    border: 1px solid #AAAAAA;
+    border-color: rgba(48, 54, 61, 0.7);
+  }
+
+  tr:nth-child(even) {
+    background-color: #161b22;
   }
 
   .wikitopbanner {
-    background-color: #4d6080;
+    background-color: #263040;
   }
 
   .wikibottombanner {
-    background-color: #4d6080;
+    background-color: #263040;
+  }
+
+  .anchorText:hover .anchorImage {
+    filter: invert(100%);
   }
 }
