@@ -42,7 +42,7 @@ li {
 
 div.sourceCode {
   background-color: #f6f8fa;
-  width: fit-content;
+  max-width: 100%;
   padding: 16px;
 }
 
@@ -51,7 +51,6 @@ code {
   padding: 2px;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
     "Liberation Mono", monospace;
-  font-size: 90%;
 }
 
 table {
