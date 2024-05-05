@@ -168,3 +168,23 @@ hr {
     filter: invert(100%);
   }
 }
+
+@media print {
+  body {
+    font-size: 12px;
+  }
+
+  table {
+    font-size: inherit;
+  }
+
+  a:visited {
+    color: #0969da;
+  }
+
+  .wikitopbanner,
+  .anchorText,
+  .wikibottombanner {
+    display: none;
+  }
+}
