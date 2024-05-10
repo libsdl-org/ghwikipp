@@ -1143,7 +1143,7 @@ if ($operation == 'view') {  // just serve the existing page.
 
     release_git_repo_lock();
 
-    $template_vars['cooked'] = ($cooked === false) ? '' : $cooked;
+    $template_vars['cooked'] = ($cooked === false) ? '' : fixup_preview_links($document, $cooked);
     $template_vars['raw'] = ($raw === false) ? '' : $raw;
     print_template('edit', $template_vars);
 
