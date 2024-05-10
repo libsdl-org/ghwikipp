@@ -4,6 +4,7 @@
 
 @cooked@
 
+<div class="viewtoolbar">
 <hr/>
 [
 <a href='/@page@/edit'>edit</a>
@@ -16,6 +17,7 @@
 |
 <a href='/@page@/raw'>raw</a>
 ]
+</div>
 
 @include html_footer@
 
