@@ -319,6 +319,20 @@ function recook_search_index()
 }
 
 
+// Convert any relative links in a wiki page to full links. You only want to do this for
+// throwaway cooks for preview content while editing, since that's running off a subdir
+// of where the edited page would normally be, which messes up links.
+function fixup_preview_links($page, $data)
+{
+    global $base_url;
+
+    $stripped_page = dirname($page);  // this just happens to work.
+    $pattern = '/(\<a href=")((?![a-z]*\:\/\/|\/)(.*?))("\>)/i';
+    $replacement = '$1' . "$base_url/$stripped_page/" . '$3$4';
+    return preg_replace($pattern, $replacement, $data);
+}
+
+
 // Stole some of this from https://github.com/dintel/php-github-webhook/blob/master/src/Handler.php
 function validate_webhook_signature($gitHubSignatureHeader, $payload)
 {
@@ -1198,9 +1212,12 @@ if ($operation == 'view') {  // just serve the existing page.
         fail400('Unsupported document format');
     }
 
-    $data = str_replace("\r\n", "\n", $data);
-    print($data == '' ? $data : cook_string($data, $pandoc_format));
-
+    if ($data != '') {
+        $data = str_replace("\r\n", "\n", $data);
+        $data = cook_string($data, $pandoc_format);
+        $data = fixup_preview_links($document, $data);
+        print($data);
+    }
 } else if ($operation == 'history') {
     foreach ($supported_formats as $ext => $format) {
         if (file_exists("$raw_data/$document.$ext")) {
