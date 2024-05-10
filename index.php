@@ -3,7 +3,7 @@
 require_once('config.php');
 
 $supported_formats = [
-    'md' => 'markdown_github',
+    'md' => 'gfm',
     'mediawiki' => 'mediawiki'
 ];
 

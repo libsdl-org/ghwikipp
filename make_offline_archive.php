@@ -9,7 +9,7 @@ require_once('config.php');
 
 // !!! FIXME: put this in a common.php file or something.
 $supported_formats = [
-    'md' => 'markdown_github',
+    'md' => 'gfm',
     'mediawiki' => 'mediawiki'
 ];
 
