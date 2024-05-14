@@ -815,7 +815,7 @@ function make_new_page_version($page, $ext, $newtext, $comment)
     }
 
     if ($trusted_author) {
-        print_template('pushed_to_main', [ 'hash' => $hash, 'commiturl' => "$github_url/commit/$hash", 'cooked' => $cooked ]);
+        print_template('pushed_to_main', [ 'hash' => $hash, 'commiturl' => "$github_url/commit/$hash", 'cooked' => fixup_preview_links($page, $cooked) ]);
     } else {  // generate a pull request so we can review before applying.
         $user = $_SESSION['github_user'];
         $body = "This edit was made by @{$user}.\n\n" .
@@ -830,7 +830,7 @@ function make_new_page_version($page, $ext, $newtext, $comment)
                                       'maintainer_can_modify' => true,
                                       'draft' => false ],
                                     $github_committer_token, true);
-        print_template('made_pull_request', [ 'branch' => $branch, 'prurl' => $response['html_url'], 'cooked' => $cooked ]);
+        print_template('made_pull_request', [ 'branch' => $branch, 'prurl' => $response['html_url'], 'cooked' => fixup_preview_links($page, $cooked) ]);
     }
 }
 
