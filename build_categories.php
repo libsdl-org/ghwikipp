@@ -9,7 +9,7 @@ require_once('config.php');
 
 // !!! FIXME: put this in a common.php file or something.
 $supported_formats = [
-    'md' => 'markdown_github',
+    'md' => 'gfm',
     'mediawiki' => 'mediawiki'
 ];
 
@@ -81,7 +81,7 @@ function build_category_lists($srcdir)
                             $count = 0;
                             if ($from_format == "mediawiki") {
                                 $c = preg_replace('/^\[\[(.*?)\]\]$/', '$1', $c, 1, $count);
-                            } else if ($from_format == "markdown_github") {
+                            } else if ($from_format == "gfm") {
                                 $c = preg_replace('/^\[(.*?)\]\(.*?\)$/', '$1', $c, 1, $count);
                             }
                             // currently we have pages that don't have these wikilinked, so don't check $count==1 here for now.
