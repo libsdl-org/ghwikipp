@@ -64,8 +64,10 @@ function build_category_lists($srcdir)
                 exit(1);
             }
 
+            $pending_categories = NULL;
+
             while (($line = fgets($fp)) !== false) {
-                // The categories come right after a '----' line.
+                // The categories come right after a '----' line and must be the final nonblank line of the file.
 
                 // Strictly speaking, it's legal in Markdown to do:
                 //
@@ -74,9 +76,12 @@ function build_category_lists($srcdir)
                 //
                 // (which is equivalent to "# My sub-header" on a single line.)
                 // ...so this can catch nonsense if the sub-header is four chars long,
-                // but we attempt to mitigate.
-                if (trim($line) == '----') {
+                // and at the end of the file, but we attempt to mitigate.
+
+                $line = trim($line);
+                if ($line == '----') {  # !!! FIXME: strictly speaking, this can fail if you have two `----` lines in a row at the end of the file...but, like...don't do that.
                     if (($line = fgets($fp)) !== false) {
+                        $pending_categories = array();
                         $cats = explode(',', trim($line));
                         foreach ($cats as $c) {
                             $c = trim($c);
@@ -88,20 +93,27 @@ function build_category_lists($srcdir)
                             }
                             // currently we have pages that don't have these wikilinked, so don't check $count==1 here for now.
                             if (/*($count == 1) &&*/ ($c != "")) {
-                                if (!isset($categories[$c])) {
-                                    $categories[$c] = array();
-                                }
-                                //print("Adding '$page' to '$c'\n");
-                                $categories[$c][$page] = true;
+                                $pending_categories[] = $c;
                             }
                         }
                     }
+                } else if ($line != '') {
+                    $pending_categories = NULL;  // wasn't the end of the file, don't treat this as a category footer thing.
                 }
             }
             fclose($fp);
+
+            if ($pending_categories != NULL) {
+                foreach ($pending_categories as $c) {
+                    if (!isset($categories[$c])) {
+                        $categories[$c] = array();
+                    }
+                    //print("Adding '$page' to '$c'\n");
+                    $categories[$c][$page] = true;
+                }
+            }
         }
     }
-
     closedir($dirp);
 }
 
