@@ -204,8 +204,10 @@ Mark a few people as admins, so they can mark people as trusted to make
 direct pushes instead of pull requests, as appropriate.
 
 * Set up a cronjob to run build_categories.php, if you want the wikibot
-to build category pages and push them. This is an experimental feature
-atm.
+to build category pages and push them. Once an hour or once a day is probably
+fine. SDL currently has a small script that runs when the wiki's git
+repository gets new pushes that runs build_categories.php every time, for
+faster updates.
 
 * Install codesearch:
 
