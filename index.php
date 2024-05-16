@@ -1097,12 +1097,13 @@ if ($operation == 'view') {  // just serve the existing page.
 
     $published_path = "$cooked_data/$document.html";
 
+    $preamble = '';  // unused, but you can hack something into this source code if you need it!
     $cooked = '';
     obtain_git_repo_lock();
     if (!file_exists($published_path)) {
         print_template('not_yet_a_page');
     } else {
-        print_template('view', [ 'cooked' => file_get_contents($published_path) ]);
+        print_template('view', [ 'cooked' => file_get_contents($published_path), 'preamble' => $preamble ]);
     }
     release_git_repo_lock();
 

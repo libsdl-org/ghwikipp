@@ -2,6 +2,7 @@
 <link rel="stylesheet" href="/static_files/pandoc.css" />
 @include html_startcontent@
 
+@preamble@
 @cooked@
 
 <div class="viewtoolbar">
