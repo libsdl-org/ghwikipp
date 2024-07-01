@@ -55,6 +55,7 @@
 </style>
 
 <script type='text/javascript'>
+  var session_storage_item = "docedit-@page@";
   var cooking_timer = undefined;
   var xhr = undefined;
   var origtext = undefined;
@@ -91,7 +92,19 @@
   }
 
   function set_warn_when_leaving(enable) {
-      window.onbeforeunload = enable ? warn_when_leaving : null;
+      // if we can save this in sessionStorage, we don't need to warn when you leave/reload the page.
+      if (enable) {
+        try {
+          sessionStorage.setItem(session_storage_item, document.getElementById("rawtext").value);
+          window.onbeforeunload = null;
+        } catch (error) {
+          sessionStorage.removeItem(session_storage_item);
+          window.onbeforeunload = warn_when_leaving;
+        }
+      } else {
+        sessionStorage.removeItem(session_storage_item);
+        window.onbeforeunload = null;
+      }
   }
 
   function rawtext_needs_recooking() {
@@ -111,7 +124,7 @@
       if (!changed_from_original) {
           document.getElementById("cooked").innerHTML = origcooked;  // in case this changed _back_.
       } else {
-          // only fire off an AJAX request if no new input happened for X seconds.
+          // only fire off an AJAX request if no new input happened for X milliseconds.
           cooking_timer = setTimeout(cook_new_rawtext, 500);
       }
   }
@@ -137,6 +150,21 @@
       origtext = document.getElementById("rawtext").value;
       origformat = document.getElementById("format").value;
       origcooked = document.getElementById("cooked").innerHTML;
+      var sessiontext = sessionStorage.getItem(session_storage_item);
+      if ((sessiontext !== null) && (sessiontext != origtext)) {
+        document.getElementById("rawtext").value = sessiontext;
+        rawtext_needs_recooking();
+      }
+  }
+
+  function cancel_clicked() {
+    if (document.getElementById("rawtext").value != origtext) {
+        if (!confirm("Are you sure you want to throw away your changes?")) {
+            return false;  // stop the page leave.
+        }
+    }
+    set_warn_when_leaving(false);
+    return true;  // let the href proceed.
   }
 </script>
 
@@ -169,7 +197,7 @@
       <option value="mediawiki" @fmt_mediawiki_selected@ >MediaWiki</option>
     </select>
     <input type="submit" id="submit" name="submit" value="Submit" onclick="set_warn_when_leaving(false);" disabled />
-    <a href='/@page@'>[ Cancel ]</a>
+    <a href='/@page@' onclick="cancel_clicked();">[ Cancel ]</a>
   </form>
 </div>
 
