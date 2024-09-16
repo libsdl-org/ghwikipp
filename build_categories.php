@@ -24,6 +24,57 @@ putenv("GIT_AUTHOR_NAME=$git_committer_name");
 putenv("GIT_AUTHOR_EMAIL=$git_committer_email");
 
 
+function file_contents_match($path1, $path2)
+{
+    if ($path1 == $path2) {
+        return true;
+    } else if (filesize($path1) != filesize($path2)) {
+        return false;
+    }
+
+    $fh1 = fopen($path1, 'rb');
+    if ($fh1 === false) {
+        return false;
+    }
+
+    $fh2 = fopen($path2, 'rb');
+    if ($fh2 === false) {
+        fclose($fh1);
+        return false;
+    }
+
+    $size = 1024 * 32;  // compare 32k at a time.
+    $retval = true;
+    while (!feof($fh1)) {
+        if (fread($fh1, $size) != fread($fh2, $size)) {
+            $retval = false;
+            break;
+        }
+    }
+
+    fclose($fh1);
+    fclose($fh2);
+
+    return $retval;
+}
+
+// overwrite an existing file with a temp file only if they've changed, so the timestamp doesn't update if we just made the same file.
+// this prevents the page recooker from doing unnecessary heavy lifting.
+// This will delete the temp file if it doesn't rename it, even in failure.
+function replace_with_tempfile($tmppath, $origpath)
+{
+    $retval = true;
+    if (file_contents_match($tmppath, $origpath)) {
+        unlink($tmppath);  // wasn't needed!
+    } else {
+        $retval = rename($tmppath, $origpath);
+        if (!$retval) {
+            unlink($tmppath);  // oh well.
+        }
+    }
+    return $retval;
+}
+
 $categories = array();
 function build_category_lists($srcdir)
 {
@@ -293,8 +344,7 @@ function handle_subdir($dname)
 
         fclose($out);
 
-        if (!rename($tmppath, $path)) {
-            unlink($tmppath);
+        if (!replace_with_tempfile($tmppath, $path)) {
             print("Failed to rename '$tmppath' to '$path'!\n");
             system("cd $escrawdata && git clean -dfq && git checkout -- .");
             exit(1);
