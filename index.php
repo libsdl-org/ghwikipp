@@ -22,6 +22,9 @@ $git_repo_lock_count = 0;
 function obtain_git_repo_lock()
 {
     global $repo_lock_fname, $git_repo_lock_fp, $git_repo_lock_count;
+
+    //$starttime = microtime(true);
+
     if ( ($git_repo_lock_count < 0) ||
          (($git_repo_lock_fp === false) && ($git_repo_lock_count != 0)) ||
          (($git_repo_lock_fp !== false) && ($git_repo_lock_count == 0)) ) {
@@ -38,6 +41,9 @@ function obtain_git_repo_lock()
     }
 
     $git_repo_lock_count++;
+
+    //$totaltime = (int) (microtime(true) - $starttime);
+    //print("\n\n\n\n\nTime to obtain git repo lock: $totaltime seconds.\n\n\n\n");
 }
 
 function release_git_repo_lock()
@@ -224,8 +230,12 @@ function cook_page_from_files($rawfname, $cookedfname)
         $cooked = cook_string($raw, $from_format);
         if (($cooked != '') || ($raw == '')) {
             @mkdir(dirname($cookedfname));
-            if (file_put_contents($cookedfname, $cooked) != strlen($cooked)) {
+            $tmppath = "$cookedfname.tmp";
+            if (file_put_contents($tmppath, $cooked) != strlen($cooked)) {
                 fail503("Failed to write $cookedfname when cooking. Please try again later.");
+            } else if (!rename($tmppath, $cookedfname)) {
+                unlink($tmppath);
+                fail503("Failed to rename $tmppath to $cookedfname when cooking. Please try again later.");
             }
         }
     }
@@ -365,7 +375,12 @@ function github_webhook()
         fail400("$str\nBAD SIGNATURE\n", 'fail_plaintext');
     }
 
+    $starttime = microtime(true);
     $payload = file_get_contents('php://input');
+    $totaltime = (int) (microtime(true) - $starttime);
+    $str .= "OBTAINED JSON DATA IN $totaltime SECONDS.\n";
+
+    $starttime = microtime(true);
 
     // Check if the payload is json or urlencoded.
     if (strpos($payload, 'payload=') === 0) {
@@ -376,7 +391,11 @@ function github_webhook()
         fail400("$str\nBAD SIGNATURE\n", 'fail_plaintext');
     }
 
-    $str .= "SIGNATURE OK\n";
+    $totaltime = (int) (microtime(true) - $starttime);
+    $str .= "VALIDATED WEBHOOK SIGNATURE IN $totaltime SECONDS.\n";
+
+    $str .= "SIGNATURE OK IN $totaltime SECONDS.\n";
+
     $str .= "GITHUB EVENT: $event\n";
 
     if ($event == 'push') {   // we only care about push events.
@@ -384,7 +403,12 @@ function github_webhook()
         if ($json['ref'] != "refs/heads/$github_repo_main_branch") {
             $str .= "PUSH EVENT ISN'T FOR MAIN BRANCH, IGNORING.\n";  // probably a topic branch we just pushed for a pull request.
         } else {
+            $starttime = microtime(true);
             obtain_git_repo_lock();
+            $totaltime = (int) (microtime(true) - $starttime);
+            $str .= "OBTAINED GIT REPO LOCK IN $totaltime SECONDS.\n";
+
+            $starttime = microtime(true);
             $escrawdata = escapeshellarg($raw_data);
             $cmd = "( cd $escrawdata && git pull --rebase ) 2>&1";
             unset($output);
@@ -399,6 +423,10 @@ function github_webhook()
                 fail503("$str\nGIT PULL FAILED!\n", 'fail_plaintext');
             }
 
+            $totaltime = (int) (microtime(true) - $starttime);
+            $str .= "GIT PULL COMPLETE IN $totaltime SECONDS.\n";
+
+            $starttime = microtime(true);
             $updated = array();
             $failed = false; // !!! FIXME: recook_tree returns void atm
             recook_tree($raw_data, $cooked_data, '', $updated);
@@ -415,7 +443,11 @@ function github_webhook()
 
             recook_search_index();
 
-            $str .= "\nTREE RECOOKED.\n";
+            $totaltime = (int) (microtime(true) - $starttime);
+
+            release_git_repo_lock();
+
+            $str .= "\nTREE RECOOKED IN $totaltime SECONDS.\n";
         }
     }
 
@@ -1035,7 +1067,6 @@ function build_index($base, $dname, &$output)
     return $output;
 }
 
-
 // Main line!
 
 // can't have a '/' at the end of the URL or we'll generate incorrect links.
@@ -1099,27 +1130,23 @@ if ($operation == 'view') {  // just serve the existing page.
 
     $preamble = '';  // unused, but you can hack something into this source code if you need it!
     $cooked = '';
-    obtain_git_repo_lock();
+
     if (!file_exists($published_path)) {
         print_template('not_yet_a_page');
     } else {
         print_template('view', [ 'cooked' => file_get_contents($published_path), 'preamble' => $preamble ]);
     }
-    release_git_repo_lock();
 
 } else if ($operation == 'raw') {  // just serve the existing raw page.
-    obtain_git_repo_lock();
     foreach ($supported_formats as $ext => $format) {
         $raw = @file_get_contents("$raw_data/$document.$ext");
         if ($raw !== false) {
-            release_git_repo_lock();
             header('Content-Type: text/plain; charset=utf-8');
             print($raw);
             print("\n");
             exit(0);
         }
     }
-    release_git_repo_lock();
 
     print_template('not_yet_a_page');
 
@@ -1246,11 +1273,8 @@ if ($operation == 'view') {  // just serve the existing page.
     perform_action_on_user('admin', $admin_data, $document, ($operation == 'admin_confirm'));
 
 } else if ($operation == 'index') {
-    obtain_git_repo_lock();
     $pagelist = array();
     build_index(NULL, $raw_data, $pagelist);
-    release_git_repo_lock();
-
     $htmllist = '';
     asort($pagelist, SORT_STRING|SORT_FLAG_CASE);
     foreach ($pagelist as $p) {
@@ -1333,6 +1357,8 @@ if ($operation == 'view') {  // just serve the existing page.
 
     header('Content-Type: text/plain; charset=utf-8');
     $str = "\nRECOOKING...\n\n";
+
+    $starttime = microtime(true);
     $updated = array();
     $failed = false; // !!! FIXME: recook_tree returns void atm
     recook_tree($raw_data, $cooked_data, '', $updated);
@@ -1347,7 +1373,8 @@ if ($operation == 'view') {  // just serve the existing page.
 
     recook_search_index();
 
-    $str .= "\nTREE RECOOKED.\n";
+    $totaltime = (int) (microtime(true) - $starttime);
+    $str .= "\nTREE RECOOKED IN $totaltime SECONDS.\n";
     print("$str\n");
 
 } else {
