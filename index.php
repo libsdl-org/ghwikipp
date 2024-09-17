@@ -276,7 +276,7 @@ function recook_tree($rawbasedir, $cookedbasedir, $dir, &$updated)
         } else {
             $src = "$rawbasedir/$page";
             $dst = "$cookedbasedir/$page";
-            $dst = preg_replace('/\..*?$/', '.html', $dst);
+            $dst = preg_replace('/^(.*)\..*?$/', '$1.html', $dst);
             $srcmtime = filemtime($src);
             $dstmtime = @filemtime($dst);
             if (($srcmtime === false) || ($dstmtime === false) || ($srcmtime >= $dstmtime)) {
