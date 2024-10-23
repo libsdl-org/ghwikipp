@@ -839,7 +839,7 @@ function make_new_page_version($page, $ext, $newtext, $comment)
     $escauthor = escapeshellarg($author);
     $escmsgfile = escapeshellarg($git_commit_message_file);
 
-    if ($_SESSION['github_user'] == 'icculus') { $trusted_author = false; }  // uncomment for debugging purposes.
+    //if ($_SESSION['github_user'] == 'icculus') { $trusted_author = false; }  // uncomment for debugging purposes.
 
     obtain_git_repo_lock();
 
