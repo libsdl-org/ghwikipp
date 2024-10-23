@@ -1067,6 +1067,39 @@ function build_index($base, $dname, &$output)
     return $output;
 }
 
+
+$search_query = '';
+function sort_search_results($a, $b)
+{
+    $retval = strcasecmp($a, $b);
+    if ($retval != 0) {
+        $bias = 0;
+
+        /* HACK FOR SDL3 FOR NOW: */
+        if ((strncmp($a, "SDL3", 4) == 0) && (strncmp($b, "SDL2", 4) == 0)) {
+            $bias = -1;
+        } else if ((strncmp($a, "SDL2", 4) == 0) && (strncmp($b, "SDL3", 4) == 0)) {
+            $bias = 1;
+        }
+        /* HACK FOR SDL3 FOR NOW: */
+
+        global $search_query;
+        $abase = (basename($a) == $search_query);
+        $bbase = (basename($b) == $search_query);
+        if ($abase && $bbase) {
+            $retval = ($bias != 0) ? $bias : $retval;
+        } else if ($abase) {
+            $retval = -1;  // exact page name match? Move it to the front.
+        } else if ($bbase) {
+            $retval = 1;  // exact page name match? Move it to the front.
+        } else if ($bias != 0) {
+            $retval = $bias;
+        }
+    }
+
+    return $retval;
+}
+
 // Main line!
 
 // can't have a '/' at the end of the URL or we'll generate incorrect links.
@@ -1286,16 +1319,16 @@ if ($operation == 'view') {  // just serve the existing page.
 } else if ($operation == 'search') {
     // !!! FIXME: move this to a separate function.
     // !!! FIXME: maybe limit searches to people auth'd with GitHub to prevent server load from crawlers?
-    $query = isset($_REQUEST['q']) ? $_REQUEST['q'] : '';  // let this be a GET option so people can post search URLs.
+    $search_query = isset($_REQUEST['q']) ? $_REQUEST['q'] : '';  // let this be a GET option so people can post search URLs.
     $htmllist = '';
     $htmlquery = '';
     $queryurl = '';
     $hideifblank = 'none';
-    if ($query != '') {
+    if ($search_query != '') {
         $hideifblank = 'inline';
-        $htmlquery = htmlspecialchars($query, ENT_QUOTES|ENT_SUBSTITUTE|ENT_DISALLOWED|ENT_HTML5, 'UTF-8');
-        $queryurl = rawurlencode($query);
-        $escquery = escapeshellarg($query);
+        $htmlquery = htmlspecialchars($search_query, ENT_QUOTES|ENT_SUBSTITUTE|ENT_DISALLOWED|ENT_HTML5, 'UTF-8');
+        $queryurl = rawurlencode($search_query);
+        $escquery = escapeshellarg($search_query);
         $cmd = "csearch -i $escquery";
         unset($output);
         $failed = (exec($cmd, $output, $result) === false);
@@ -1308,6 +1341,18 @@ if ($operation == 'view') {  // just serve the existing page.
             if (preg_match("/^.*\/$raw_data\/(.*)\..*?\:(.*)$/", $l, $matches) != 1) { continue; }
             $p = $matches[1];
             $txt = $matches[2];
+
+            // skip the title on the actual page
+            if (preg_match("/^# $search_query$/", $txt, $matches) == 1) { continue; }
+            if (preg_match("/^= $search_query =$/", $txt, $matches) == 1) { continue; }
+
+            // skip the redirect pages (these are only in Markdown format).
+            if (preg_match("/^Please refer to \[.*?\]\(.*?\) for details.$/", $txt, $matches) == 1) { continue; }
+
+            // skip what are probably See Also links.
+            if ((preg_match("/^\- \[(.*?)\]\((.*?)\)$/", $txt, $matches) == 1) && ($matches[1] == $matches[2])) { continue; }
+            if ((preg_match("/^\* \[\[(.*?)\]\]$/", $txt, $matches) == 1)) { continue; }
+
             if (!isset($pagehits[$p])) {
                 $pagehits[$p] = array();
             }
@@ -1317,12 +1362,7 @@ if ($operation == 'view') {  // just serve the existing page.
         if (count($pagehits) == 0) {
             $htmllist .= "<li>No results found.</li>\n";
         } else {
-            ksort($pagehits, SORT_STRING|SORT_FLAG_CASE);
-
-            // if the user asked for an exact page match, move it to the start of the array.
-            if (isset($pagehits[$query])) {
-                $pagehits = array($query => $pagehits[$query]) + $pagehits;
-            }
+            uksort($pagehits, "sort_search_results");
 
             foreach ($pagehits as $p => $txt) {
                 $htmllist .= "<li><a href='/$p'>$p</a>:<dl>\n";
