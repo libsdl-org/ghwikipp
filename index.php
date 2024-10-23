@@ -400,7 +400,51 @@ function github_webhook()
 
     if ($event == 'push') {   // we only care about push events.
         $json = json_decode($payload, TRUE);
-        if ($json['ref'] != "refs/heads/$github_repo_main_branch") {
+        if (($json['ref'] != "refs/heads/$github_repo_main_branch") && $json['deleted']) {
+            $str .= "PUSH EVENT IS A BRANCH DELETION, DOING A FETCH FOR PRUNING.\n";  // probably a topic branch we just pushed for a pull request.
+            $starttime = microtime(true);
+            obtain_git_repo_lock();
+            $totaltime = (int) (microtime(true) - $starttime);
+            $str .= "OBTAINED GIT REPO LOCK IN $totaltime SECONDS.\n";
+
+            $starttime = microtime(true);
+            $escrawdata = escapeshellarg($raw_data);
+            $cmd = "( cd $escrawdata && git fetch --prune ) 2>&1";
+            unset($output);
+            $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
+
+            $str .= "\nOUTPUT of '$cmd':\n\n";
+            foreach ($output as $l) {
+                $str .= "    $l\n";
+            }
+
+            if ($failed) {
+                fail503("$str\nGIT FETCH FAILED!\n", 'fail_plaintext');
+            }
+
+            $totaltime = (int) (microtime(true) - $starttime);
+            $str .= "GIT FETCH COMPLETE IN $totaltime SECONDS.\n";
+
+            $starttime = microtime(true);
+            $escrawdata = escapeshellarg($raw_data);
+            $branch = preg_replace('/^refs\/heads\//', '', $json['ref']);
+            $escbranch = escapeshellarg($branch);
+            $cmd = "( cd $escrawdata && git branch -D $escbranch ) 2>&1";
+            unset($output);
+            $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
+
+            $str .= "\nOUTPUT of '$cmd':\n\n";
+            foreach ($output as $l) {
+                $str .= "    $l\n";
+            }
+
+            if ($failed) {
+                fail503("$str\nGIT BRANCH DELETE FAILED!\n", 'fail_plaintext');
+            }
+
+            $totaltime = (int) (microtime(true) - $starttime);
+            $str .= "GIT BRANCH DELETE COMPLETE IN $totaltime SECONDS.\n";
+        } else if ($json['ref'] != "refs/heads/$github_repo_main_branch") {
             $str .= "PUSH EVENT ISN'T FOR MAIN BRANCH, IGNORING.\n";  // probably a topic branch we just pushed for a pull request.
         } else {
             $starttime = microtime(true);
@@ -410,7 +454,7 @@ function github_webhook()
 
             $starttime = microtime(true);
             $escrawdata = escapeshellarg($raw_data);
-            $cmd = "( cd $escrawdata && git pull --rebase ) 2>&1";
+            $cmd = "( cd $escrawdata && git pull --rebase --prune ) 2>&1";
             unset($output);
             $failed = (exec($cmd, $output, $result) === false) || ($result != 0);
 
@@ -753,6 +797,27 @@ function force_authorize_with_github()
     authorize_with_github(true);
 }
 
+function calculate_branch_name($document, $userid)
+{
+    return "edit-$userid-$document";
+}
+
+function find_existing_pull_request($document, $userid)
+{
+    global $raw_data;
+    $branch = calculate_branch_name($document, $userid);
+    $escbranch = escapeshellarg("refs/heads/$branch");
+    $escrawdata = escapeshellarg($raw_data);
+    $cmd = "cd $escrawdata && git show-ref --verify --quiet $escbranch";
+    unset($output);
+    $failed = (exec($cmd, $output, $result) === false);
+    if ($failed) {
+        fail503('Failed to lookup existing edit branch in git; please try again later.');
+    }
+    return ($result == 0) ? $branch : NULL;
+}
+
+
 function make_new_page_version($page, $ext, $newtext, $comment)
 {
     global $raw_data, $git_commit_message_file, $git_committer_user, $github_url, $base_url;
@@ -768,6 +833,31 @@ function make_new_page_version($page, $ext, $newtext, $comment)
     $escpage = escapeshellarg("$page.$ext");
     $escrawdata = escapeshellarg($raw_data);
 
+    $escmain = escapeshellarg($github_repo_main_branch);
+    $trusted_author = $_SESSION['is_trusted'] || $_SESSION['is_admin'];   // trusted/admin authors push right to main. Untrusted authors generate pull requests.
+    $author = $_SESSION['github_name'] . ' <' . $_SESSION['github_email'] . '>';
+    $escauthor = escapeshellarg($author);
+    $escmsgfile = escapeshellarg($git_commit_message_file);
+
+    if ($_SESSION['github_user'] == 'icculus') { $trusted_author = false; }  // uncomment for debugging purposes.
+
+    obtain_git_repo_lock();
+
+    $existing_branch = find_existing_pull_request($page, $_SESSION['github_id']);
+    $branch = $existing_branch;
+    if ($existing_branch == NULL) {
+        $branch = calculate_branch_name($page, $_SESSION['github_id']);
+        $escbranch = escapeshellarg($branch);
+    } else {
+        $escbranch = escapeshellarg($branch);
+        $cmd = "( cd $escrawdata && git checkout $escbranch ) 2>&1";
+        unset($output);
+        if ((exec($cmd, $output, $result) === false) || ($result != 0)) {
+            exec("cd $escrawdata && git checkout $escmain");
+            fail503('Failed to checkout topic branch from git. Please try again later.');
+        }
+    }
+
     if ($comment == '') {
         $comment = is_readable($gitfname) ? 'Updated.' : 'Added.';
     }
@@ -775,26 +865,18 @@ function make_new_page_version($page, $ext, $newtext, $comment)
     $comment = "$page: $comment";
     $full_comment = "$comment\n\nLive page is here: $base_url/$page\n\n";
 
-    obtain_git_repo_lock();
-
     if (file_put_contents($git_commit_message_file, $full_comment) != strlen($full_comment)) {
         unlink($git_commit_message_file);  // just in case.
+        exec("cd $escrawdata && git checkout $escmain");
         fail503('Failed to write new content to disk. Please try again later.');
     }
 
     @mkdir(dirname($gitfname));
     if (file_put_contents($gitfname, $newtext) != strlen($newtext)) {
-        exec("cd $escrawdata && git checkout -- $escpage");
         unlink($git_commit_message_file);
+        exec("cd $escrawdata && git checkout -- $escpage && git checkout $escmain");
         fail503('Failed to write new content to disk. Please try again later.');
     }
-
-    $now = time();
-    $branch = "edit-" . $_SESSION['github_user'] . '-' . $now;
-    $author = $_SESSION['github_name'] . ' <' . $_SESSION['github_email'] . '>';
-    $escbranch = escapeshellarg($branch);
-    $escauthor = escapeshellarg($author);
-    $escmsgfile = escapeshellarg($git_commit_message_file);
 
     // remove files if the file extension changed.
     $rmcmd = '';
@@ -810,12 +892,13 @@ function make_new_page_version($page, $ext, $newtext, $comment)
 
     $hash = '';
     $cmd = '';
-    $trusted_author = $_SESSION['is_trusted'] || $_SESSION['is_admin'];   // trusted/admin authors push right to main. Untrusted authors generate pull requests.
-    $escmain = $github_repo_main_branch;
-    if ($trusted_author) {
+
+    if ($existing_branch != NULL) {
+        $cmd = "( cd $escrawdata && git add $escpage $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push && git checkout $escmain) 2>&1";
+    } else if ($trusted_author) {
         $cmd = "( cd $escrawdata && git checkout $escmain && git add $escpage $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push ) 2>&1";
     } else {
-        $cmd = "( cd $escrawdata && git checkout -b $escbranch && git add $escpage $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push --set-upstream origin $escbranch && git checkout $escmain && git branch -d $escbranch) 2>&1";
+        $cmd = "( cd $escrawdata && git checkout -b $escbranch && git add $escpage $rmcmd && git commit -F $escmsgfile --author=$escauthor && git push --set-upstream origin $escbranch && git checkout $escmain) 2>&1";
     }
 
     unset($output);
@@ -829,7 +912,7 @@ function make_new_page_version($page, $ext, $newtext, $comment)
     exec("cd $escrawdata && git checkout $escmain && ( git reset --hard HEAD ; git clean -df )");   // just in case.
 
     $cooked = '';
-    if ($trusted_author) {
+    if ($trusted_author && ($existing_branch == NULL)) {
         $cooked = cook_page($page);  // this is going to recook in a moment when GitHub sends a push notification, but let's keep the state sane.
     } else {
         $cooked = cook_string($newtext, $supported_formats[$ext]);
@@ -846,14 +929,17 @@ function make_new_page_version($page, $ext, $newtext, $comment)
         fail503("Failed to push your changes. Please try again later.$str");
     }
 
-    if ($trusted_author) {
+    if ($existing_branch != NULL) {
+        print_template('added_to_pull_request', [ 'branch' => $branch, 'cooked' => fixup_preview_links($page, $cooked) ]);
+    } else if ($trusted_author) {
         print_template('pushed_to_main', [ 'hash' => $hash, 'commiturl' => "$github_url/commit/$hash", 'cooked' => fixup_preview_links($page, $cooked) ]);
     } else {  // generate a pull request so we can review before applying.
         $user = $_SESSION['github_user'];
         $body = "This edit was made by @{$user}.\n\n" .
                 "Live page is here: $base_url/$page\n\n" .
                 "If this user should be blocked from further edits, an admin should go to $base_url/$user/block\n" .
-                "If this user should be trusted to make direct pushes to $github_repo_main_branch, without a pull request, an admin should go to $base_url/$user/trust\n";
+                "If this user should be trusted to make direct pushes to $github_repo_main_branch, without a pull request, an admin should go to $base_url/$user/trust\n\n" .
+                "WHETHER YOU MERGE OR REJECT THIS PULL REQUEST, DON'T FORGET TO DELETE THE BRANCH. Otherwise, $user won't be able to start a new PR for this page.\n";
         $response = call_github_api("https://api.github.com/repos/$github_repo_owner/$github_repo/pulls",
                                     [ 'head' => $branch,
                                       'base' => $github_repo_main_branch,
@@ -953,7 +1039,8 @@ function delete_page($page, $comment)
         $body = "This edit was made by @{$user}.\n\n" .
                 "Live page is here: $base_url/$page\n\n" .
                 "If this user should be blocked from further edits, an admin should go to $base_url/$user/block\n" .
-                "If this user should be trusted to make direct pushes to $github_repo_main_branch, without a pull request, an admin should go to $base_url/$user/trust\n";
+                "If this user should be trusted to make direct pushes to $github_repo_main_branch, without a pull request, an admin should go to $base_url/$user/trust\n\n" .
+                "WHETHER YOU MERGE OR REJECT THIS PULL REQUEST, DON'T FORGET TO DELETE THE BRANCH. Otherwise, $user won't be able to start a new PR for this page.\n";
         $response = call_github_api("https://api.github.com/repos/$github_repo_owner/$github_repo/pulls",
                                     [ 'head' => $branch,
                                       'base' => $github_repo_main_branch,
@@ -1092,6 +1179,7 @@ function sort_search_results($a, $b)
     return $retval;
 }
 
+
 // Main line!
 
 // can't have a '/' at the end of the URL or we'll generate incorrect links.
@@ -1177,28 +1265,77 @@ if ($operation == 'view') {  // just serve the existing page.
 
 } else if ($operation == 'edit') {
     authorize_with_github();  // only returns if we are authorized.
-    obtain_git_repo_lock();
-    $cooked = @file_get_contents("$cooked_data/$document.html");
 
     $template_vars = array( 'title' => "Edit $document - $wikiname" );
 
-    $raw = false;
-    foreach ($supported_formats as $ext => $format) {
-        $selectedstr = 'fmt_' . $ext . '_selected';
-        $template_vars[$selectedstr] = '';
-        if ($raw === false) {
-            $raw = @file_get_contents("$raw_data/$document.$ext");
-            if ($raw !== false) {
-                $template_vars[$selectedstr] = 'selected';
-            }
+    obtain_git_repo_lock();
+
+    $existing_branch = find_existing_pull_request($document, $_SESSION['github_id']);
+
+    $content_choice = NULL;
+    if (($existing_branch != NULL) && (isset($_POST['use_content_choice']))) {
+        $content_choice = $_POST['use_content_choice'];
+        if (($content_choice != 'use_current_page') && ($content_choice != 'use_last_changes')) {
+            $content_choice = NULL;
         }
     }
 
-    release_git_repo_lock();
+    $template_vars['existing_branch'] = ($existing_branch != NULL) ? $existing_branch : '';
 
-    $template_vars['cooked'] = ($cooked === false) ? '' : fixup_preview_links($document, $cooked);
-    $template_vars['raw'] = ($raw === false) ? '' : $raw;
-    print_template('edit', $template_vars);
+    if (($existing_branch != NULL) && ($content_choice == NULL)) {
+        release_git_repo_lock();
+        print_template('edit_existing_pull_request', $template_vars);
+    } else if (($existing_branch != NULL) && ($content_choice == 'use_last_changes')) {
+        $escbranch = escapeshellarg($existing_branch);
+        $escdocument = escapeshellarg($document);
+        $escrawdata = escapeshellarg($raw_data);
+
+        $raw = false;
+        $from_format = false;
+        foreach ($supported_formats as $ext => $format) {
+            $selectedstr = 'fmt_' . $ext . '_selected';
+            $template_vars[$selectedstr] = '';
+            if ($raw === false) {
+                $cmd = "cd $escrawdata && git cat-file -p $escbranch:$escdocument.$ext 2>/dev/null";
+                unset($output);
+                $failed = (exec($cmd, $output, $result) === false);
+                if ($failed) {
+                    fail503('Failed to retrieve latest changes; please try again later.');
+                } else if ($result == 0) {
+                    $raw = implode("\n", $output);
+                    $from_format = $format;
+                    $template_vars[$selectedstr] = 'selected';
+                }
+            }
+        }
+
+        release_git_repo_lock();
+
+        $template_vars['cooked'] = ($raw === false) ? '' : fixup_preview_links($document, cook_string($raw, $from_format));
+        $template_vars['raw'] = ($raw === false) ? '' : $raw;
+        print_template('edit', $template_vars);
+
+    } else {  // no existing branch, or $content_choice == 'use_current_page'
+        $cooked = @file_get_contents("$cooked_data/$document.html");
+
+        $raw = false;
+        foreach ($supported_formats as $ext => $format) {
+            $selectedstr = 'fmt_' . $ext . '_selected';
+            $template_vars[$selectedstr] = '';
+            if ($raw === false) {
+                $raw = @file_get_contents("$raw_data/$document.$ext");
+                if ($raw !== false) {
+                    $template_vars[$selectedstr] = 'selected';
+                }
+            }
+        }
+
+        release_git_repo_lock();
+
+        $template_vars['cooked'] = ($cooked === false) ? '' : fixup_preview_links($document, $cooked);
+        $template_vars['raw'] = ($raw === false) ? '' : $raw;
+        print_template('edit', $template_vars);
+    }
 
 } else if ($operation == 'post') {
     // don't lose the changes if GitHub forces a redirect.

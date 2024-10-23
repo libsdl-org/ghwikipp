@@ -1,0 +1,27 @@
+@include html_standard_intro@
+
+<p>
+  <h1>
+    <a href='https://github.com/@github_user@'><img width='32' height='32' src='@github_avatar@' alt='Logged in as @github_name@'/></a>
+    Editing @page@
+  </h1>
+</p>
+
+<p>You seem to have a Pull Request for this page already.</p>
+
+<p>Any further edits will be added to that same PR until it is closed.</p>
+
+<p><a href="@githuburl@/compare/@githubmainbranch@...@existing_branch@">Here are changes already made.</a></p>
+
+<p><h2>Would you like to start editing from your last changes, or the current contents of the page?</h2></p>
+<p><form action='/@page@/edit' method='post'>
+  <button type="submit" id="use_last_changes" name="use_content_choice" value="use_last_changes">Use my last changes</button>
+  <button type="submit" id="use_current_page" name="use_content_choice" value="use_current_page">Use current page</button>
+  <a href='/@page@'>[ Cancel ]</a>
+</form>
+</p>
+
+@include html_footer@
+
+
+
