@@ -1076,8 +1076,8 @@ function sort_search_results($a, $b)
         $bias = 0;
 
         global $search_query;
-        $abase = (basename($a) == $search_query);
-        $bbase = (basename($b) == $search_query);
+        $abase = (strcasecmp(basename($a), $search_query) == 0);
+        $bbase = (strcasecmp(basename($b), $search_query) == 0);
         if ($abase && $bbase) {
             $retval = ($bias != 0) ? $bias : $retval;
         } else if ($abase) {
