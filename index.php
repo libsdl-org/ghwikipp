@@ -1075,14 +1075,6 @@ function sort_search_results($a, $b)
     if ($retval != 0) {
         $bias = 0;
 
-        /* HACK FOR SDL3 FOR NOW: */
-        if ((strncmp($a, "SDL3", 4) == 0) && (strncmp($b, "SDL2", 4) == 0)) {
-            $bias = -1;
-        } else if ((strncmp($a, "SDL2", 4) == 0) && (strncmp($b, "SDL3", 4) == 0)) {
-            $bias = 1;
-        }
-        /* HACK FOR SDL3 FOR NOW: */
-
         global $search_query;
         $abase = (basename($a) == $search_query);
         $bbase = (basename($b) == $search_query);
