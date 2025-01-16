@@ -1245,7 +1245,7 @@ if ($operation == 'view') {  // just serve the existing page.
     $cooked = '';
 
     if (!file_exists($published_path)) {
-        print_template('not_yet_a_page');
+        fail404('This page does not exist...yet!', 'not_yet_a_page');
     } else {
         print_template('view', [ 'cooked' => file_get_contents($published_path), 'preamble' => $preamble ]);
     }
