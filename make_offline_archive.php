@@ -56,7 +56,7 @@ function cook_tree_for_offline_html($srcdir, $dstdir)
                     if ($pid == -1) {
                         print("FAILED TO FORK!\n");
                     } else if ($pid == 0) {  // child process.
-                        pcntl_exec('/usr/bin/pandoc', [ '--metadata', "pagetitle=$page", '--self-contained', '-f', $from_format, '-t', 'html', '--css=static_files/ghwikipp.css', '--css=static_files/pandoc.css', '--lua-filter=./pandoc-filter-offline.lua', '-o', $dst, $src ]);
+                        pcntl_exec('/usr/bin/pandoc', [ '--metadata', "pagetitle=$page", '--embed-resources', '--standalone', '-f', $from_format, '-t', 'html', '--css=static_files/ghwikipp.css', '--css=static_files/pandoc.css', '--lua-filter=./pandoc-filter-offline.lua', '-o', $dst, $src ]);
                         exit(1);
                     } else {  // parent process.
                         $num_children++;
