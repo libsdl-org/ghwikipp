@@ -124,7 +124,10 @@ while ($num_children > 0) {
     $num_children--;
 }
 
-copy("$tmpoutdir/FrontPage.html", "$tmpoutdir/index.html");  // make a copy, not a rename, in case something references FrontPage explicitly.
+if ( -f "$tmpoutdir/FrontPage.html" ) {
+    copy("$tmpoutdir/FrontPage.html", "$tmpoutdir/index.html");  // make a copy, not a rename, in case something references FrontPage explicitly.
+}
+
 $zipfname = "$outputname.zip";
 $esczipfname = escapeshellarg($zipfname);
 $escoutputname = escapeshellarg($outputname);
