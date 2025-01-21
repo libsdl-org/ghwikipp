@@ -124,7 +124,7 @@ while ($num_children > 0) {
     $num_children--;
 }
 
-if ( -f "$tmpoutdir/FrontPage.html" ) {
+if (file_exists("$tmpoutdir/FrontPage.html")) {
     copy("$tmpoutdir/FrontPage.html", "$tmpoutdir/index.html");  // make a copy, not a rename, in case something references FrontPage explicitly.
 }
 
