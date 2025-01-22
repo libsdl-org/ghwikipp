@@ -1092,7 +1092,7 @@ function perform_action_on_user($action, $statedir, $user, $is_do)  // !$is_do =
         'action' => $is_do ? "{$action}ed" : "un{$action}ed",
         'revaction' => $action,
         'user' => $user,
-        'username' => $response['name'],
+        'username' => ($response['name'] != NULL) ? $response['name'] : $user,
         'user_avatar' => $response['avatar_url'],
         'title' => "@$user {$action}ed - $wikiname"
     ]);
@@ -1108,7 +1108,8 @@ function confirm_action_on_user($action, $user, $statedir, $explanation)
     print_template('action_on_user_confirmation', [
         'currently' => $is_do ? "{$action}ed" : "un{$action}ed",
         'action' => $is_do ? "un{$action}" : $action,
-        'user' => $user, 'username' => $response['name'],
+        'user' => $user,
+        'username' => ($response['name'] != NULL) ? $response['name'] : $user,
         'user_avatar' => $response['avatar_url'],
         'explanation' => $explanation,
         'title' => "$action @$user?- $wikiname"
