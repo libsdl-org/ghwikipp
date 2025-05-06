@@ -5,6 +5,11 @@ function Link (link)
   if isInternalSection then
     link.target = link.target:lower()
   end
+
+  -- drop any Markdown or MediaWiki file extensions that might have snuck in.
+  link.target = string.gsub(link.target, '%.md$', '')
+  link.target = string.gsub(link.target, '%.mediawiki$', '')
+
   -- !!! FIXME: this doesn't work with subdirs, figure out why this was like this at all.
   -- If it's not an absolute path, not an external URL, and not a section link, make it absolute.
   --if not absolute_path and not external_url and not isInternalSection then
