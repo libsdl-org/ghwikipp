@@ -1232,6 +1232,13 @@ if ( ($reqargcount < 1) || ($reqargs[0] == '') ) {
             $reqargs[0] = $document;
         }
     }
+
+    // Drop Markdown and MediaWiki file extensions, so bridged documentation can refer to files and have it work on the wiki, too.
+    $document = preg_replace('/\.(md|mediawiki)$/', '', $document, -1, $count);
+    if ($count == 1) {
+        $reqargs[0] = $document;
+        redirect("$base_url/" . implode('/', $reqargs));
+    }
 }
 
 $operation = ($reqargcount >= 2) ? $reqargs[1] : 'view';
