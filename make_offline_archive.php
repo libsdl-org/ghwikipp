@@ -17,11 +17,11 @@ $supported_formats = [
 $max_children = 4;
 $num_children = 0;
 
-function cook_tree_for_offline_html($srcdir, $dstdir)
+function cook_tree_for_offline_html($srcdir, $dstdir, $input_dir)
 {
-    global $supported_formats, $max_children, $num_children;
+    global $supported_formats, $max_children, $num_children, $base_url, $raw_data;
 
-    //print("cooktree: '$srcdir' -> '$dstdir'\n");
+    //print("cooktree: '$srcdir' ('$input_dir') -> '$dstdir'\n");
     $dirp = opendir($srcdir);
     if ($dirp === false) {
         return;
@@ -32,9 +32,10 @@ function cook_tree_for_offline_html($srcdir, $dstdir)
         //print("cookdent: '$dent'\n");
         $src = "$srcdir/$dent";
         $dst = "$dstdir/$dent";
+        $input_path = ($input_dir == NULL) ? $dent : "$input_dir/$dent";
         if (is_dir($src)) {
             mkdir($dst);
-            cook_tree_for_offline_html($src, $dst);
+            cook_tree_for_offline_html($src, $dst, $input_path);
         } else {
             $ext = strrchr($dent, '.');
             if ($ext !== false) {
@@ -46,6 +47,12 @@ function cook_tree_for_offline_html($srcdir, $dstdir)
                     $page = preg_replace('/^.*\//', '', $page);
                     $dst = preg_replace('/\..*?$/', '.html', $dst);
 
+                    $env = array(
+                        'GHWIKIPP_INPUT_PATH' => $input_path,
+                        'GHWIKIPP_BASE_URL' => $base_url,
+                        'GHWIKIPP_RAW_DIR' => $raw_data
+                    );
+
                     // split this across CPU cores.
                     while ($num_children >= $max_children) {
                         pcntl_waitpid(-1, $status);  // wait for any child to end.
@@ -56,7 +63,7 @@ function cook_tree_for_offline_html($srcdir, $dstdir)
                     if ($pid == -1) {
                         print("FAILED TO FORK!\n");
                     } else if ($pid == 0) {  // child process.
-                        pcntl_exec('/usr/bin/pandoc', [ '--metadata', "pagetitle=$page", '--embed-resources', '--standalone', '-f', $from_format, '-t', 'html', '--css=static_files/ghwikipp.css', '--css=static_files/pandoc.css', '--lua-filter=./pandoc-filter-offline.lua', '-o', $dst, $src ]);
+                        pcntl_exec('/usr/bin/pandoc', [ '--metadata', "pagetitle=$page", '--embed-resources', '--standalone', '-f', $from_format, '-t', 'html', '--css=static_files/ghwikipp.css', '--css=static_files/pandoc.css', '--lua-filter=./pandoc-filter-offline.lua', '-o', $dst, $src ], $env);
                         exit(1);
                     } else {  // parent process.
                         $num_children++;
@@ -118,7 +125,7 @@ fclose($git_repo_lock_fp);
 unset($git_repo_lock_fp);
 
 // okay, now we can operate on this data.
-cook_tree_for_offline_html($tmprawdir, $tmpoutdir);
+cook_tree_for_offline_html($tmprawdir, $tmpoutdir, NULL);
 while ($num_children > 0) {
     pcntl_waitpid(-1, $status);  // wait for any child to end.
     $num_children--;
