@@ -14,8 +14,20 @@ $supported_formats = [
 ];
 
 
-$max_children = 4;
+function get_max_children()
+{
+    $default_kids = 4;
+
+    // try to cook on all available CPU cores.
+    // !!! FIXME: this is Linux-specific. macOS, BSD, Windows want to do other things. Send a PR.  :)
+    $shell_output = shell_exec("nproc");
+    return is_numeric($shell_output) ? ((int) $shell_output) : $default_kids;
+}
+
+$max_children = get_max_children();
 $num_children = 0;
+
+//print("max_children = $max_children\n");
 
 function cook_tree_for_offline_html($srcdir, $dstdir, $input_dir)
 {
