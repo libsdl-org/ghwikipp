@@ -68,6 +68,9 @@ tr:nth-child(even) {
 }
 
 .wikitopbanner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   background-color: #efefef;
   padding: 10px;
   margin-bottom: 10px;

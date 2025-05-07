@@ -1,23 +1,9 @@
 
 <div class='wikibottombanner'>
 <center>
-<p>
-[
-<a href="/">front page</a>
-|
-<a href="/wiki/index">index</a>
-|
-<a href="/wiki/search">search</a>
-|
-<a href="@githuburl@/commits/@githubmainbranch@">recent changes</a>
-|
-<a href="@githuburl@">git repo</a>
-|
-<a href="/static_files/offline/@offlinebasename@.zip">offline html</a>
-]
-</p>
 <p>All wiki content is licensed under <a href="@wikilicenseurl@">@wikilicense@</a>.<br/>
 Wiki powered by <a href="https://github.com/libsdl-org/ghwikipp">ghwikipp</a>.</p>
+</center>
 </div>
 
 </body></html>

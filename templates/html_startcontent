@@ -1,4 +1,19 @@
 </head><body>
 <div class='wikitopbanner'>
-<a href="@baseurl@" style="color: inherit; text-decoration: inherit;"><font size="+3">@wikiname@</font></a>
+<div align='left'><a href="@baseurl@" style="color: inherit; text-decoration: inherit;"><font size="+3">@wikiname@</font></a></div>
+<div align='right'>
+[
+<a href="/">front page</a>
+|
+<a href="/wiki/index">index</a>
+|
+<a href="/wiki/search">search</a>
+|
+<a href="@githuburl@/commits/@githubmainbranch@">recent changes</a>
+|
+<a href="@githuburl@">git repo</a>
+|
+<a href="/static_files/offline/@offlinebasename@.zip">offline html</a>
+]
+</div>
 </div>
