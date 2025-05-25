@@ -7,8 +7,10 @@ function Link (link)
   end
 
   -- drop any Markdown or MediaWiki file extensions that might have snuck in.
-  link.target = string.gsub(link.target, '%.md$', '')
-  link.target = string.gsub(link.target, '%.mediawiki$', '')
+  if not external_url then
+    link.target = string.gsub(link.target, '%.md$', '')
+    link.target = string.gsub(link.target, '%.mediawiki$', '')
+  end
 
   -- !!! FIXME: this doesn't work with subdirs, figure out why this was like this at all.
   -- If it's not an absolute path, not an external URL, and not a section link, make it absolute.
