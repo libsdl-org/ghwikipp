@@ -101,7 +101,7 @@ git clone git@github.com:$MY_GITHUB_USER/$MY_WIKI_REPO.git $MY_VHOST_ROOT_DIR/ra
 
 ```
 cd $MY_VHOST_ROOT_DIR
-ssh-keygen -t ed25519 -C $WIKIBOT_EMAIL
+ssh-keygen -t ed25519 -C $WIKIBOT_EMAIL -f id_ed25519
 ```
 
 * Print your new ssh public key to the terminal:
@@ -122,19 +122,20 @@ push changes to GitHub.
 
 * Go here logged in as the wikibot: https://github.com/settings/tokens
 
-* Click "Generate new token". Make the note "Wiki API access" or whatever,
-click "repo" in the scopes section so it fills in a bunch of checkboxes
-under it. Scroll down and click the "generate token" button. It will
-show you a long string of characters. _Copy this somewhere_ as it won't
+* Click "Generate new token (classic)". Make the note "Wiki API access" or
+whatever, click "repo" in the scopes section so it fills in a bunch of
+checkboxes under it. Scroll down and click the "generate token" button. It
+will show you a long string of characters. _Copy this somewhere_ as it won't
 be shown to you again.
 
 * Log out as wikibot, you're done with this for the moment.
 
 * Go back to _your normal_ GitHub account, and visit the "settings" page
-on the new wiki project. Click on "Manage access" and invite the wikibot
-to this project with write access. Then, logged in as the wikibot, accept
-the invitation (which might require you to click a link in an email sent
-to the wikibot's address). Now the bot can push changes to this repo.
+on the new wiki project. Click on "Collaborators" on the left side of the
+page and invite the wikibot to this project with write access. Then, logged
+in as the wikibot, accept the invitation (which might require you to click a
+link in an email sent to the wikibot's address). Now the bot can push changes
+to this repo.
 
 * From your GitHub organization's settings page (or if you don't have an
 organization, your personal settings page), click on "Developer settings"
@@ -144,7 +145,7 @@ probably good). "Homepage URL" should be your virtual host's URL.
 "Application description" should be something like "This application
 verifies your GitHub username before you are allowed to make changes to
 MyProject's wiki." Set the "Callback URL" to the virtual host's URL, and
-click "Create application."
+click "Register application."
 
 * On the next page, click "Generate client secret" and _copy the string
 it gives you_ ... you can't get it again later. Also copy down the
@@ -169,7 +170,7 @@ cp config.php.sample config.php
 * ...and then edit config.php to fit your needs. All those strings you
 were supposed to copy, above? They go in this file.
 
-* Copy your own logo and favicon.ico to the "static_files" directory.
+* Copy your own logo.png and favicon.ico to the "static_files" directory.
 
 * Set up a cronjob to build the offline archive once a day:
 
