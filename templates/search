@@ -3,7 +3,7 @@
 <p><h1>Search</h1></p>
 <p>
 <form action='/wiki/search' method='post'>
-  <input type="text" placeholder="Enter search query here" name="q" value="@query@" />
+  <input autofocus type="text" placeholder="Enter search query here" name="q" value="@query@" />
   <input type="submit" id="submit" name="submit" value="Submit" />
 </form>
 </p>
