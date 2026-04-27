@@ -1136,7 +1136,15 @@ function build_index($base, $dname, &$output)
         if (substr($dent, 0, 1) == '.') {
             continue;  // skip ".", "..", and metadata.
         } else if (is_dir("$dname/$dent")) {
-            build_index("$base$sep$dent", "$dname/$dent", $output);
+            // if $base is NULL, just list the toplevel directories, so
+            // we don't get a huge flood of possibly-unrelated pages.
+            // we'll allow subdirs under those toplevel dirs to recurse,
+            // though, as these are rare and probably-related.
+            if ($base == NULL) {
+                $output[] = "$dent";
+            } else {
+                build_index("$base$sep$dent", "$dname/$dent", $output);
+            }
             continue;
         } else if (preg_match('/^(.*)\.(.*)$/', $dent, $matches) != 1) {
             continue;
@@ -1238,6 +1246,15 @@ if ( ($reqargcount < 1) || ($reqargs[0] == '') ) {
     if ($count == 1) {
         $reqargs[0] = $document;
         redirect("$base_url/" . implode('/', $reqargs));
+    }
+}
+
+// hack for index of subdirs
+if ($reqargcount == 1) {
+    $document = preg_replace('/^(.*?)\/index$/', '$1', $document, -1, $count);
+    if ($count == 1) {
+        $reqargcount++;
+        $reqargs[] = 'index';
     }
 }
 
@@ -1443,12 +1460,18 @@ if ($operation == 'view') {  // just serve the existing page.
     perform_action_on_user('admin', $admin_data, $document, ($operation == 'admin_confirm'));
 
 } else if ($operation == 'index') {
+    // we use "wiki/index" to get the global index instead of a subdir's.
+    $topdir = ($document == 'wiki');
     $pagelist = array();
-    build_index(NULL, $raw_data, $pagelist);
+    build_index($topdir ? NULL : $document, $topdir ? $raw_data : "$raw_data/$document", $pagelist);
     $htmllist = '';
     asort($pagelist, SORT_STRING|SORT_FLAG_CASE);
     foreach ($pagelist as $p) {
-        $htmllist .= "<li><a href='/$p'>$p</a></li>\n";
+        if ($topdir && is_dir("$raw_data/$p")) {
+            $htmllist .= "<li><a href='/$p/index'>$p</a></li>\n";
+        } else {
+            $htmllist .= "<li><a href='/$p'>$p</a></li>\n";
+        }
     }
 
     print_template('index', [ 'title' => "Index of all pages - $wikiname", 'htmllist' => $htmllist ]);
