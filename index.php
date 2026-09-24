@@ -1498,7 +1498,7 @@ if ($operation == 'view') {  // just serve the existing page.
 
         $pagehits = array();
         foreach ($output as $l) {
-            if (preg_match("/^.*\/$raw_data\/(.*)\..*?\:(.*)$/", $l, $matches) != 1) { continue; }
+            if (preg_match("/^.*\/$raw_data\/(.*?)\..*?\:(.*)$/", $l, $matches) != 1) { continue; }
             $p = $matches[1];
             $txt = $matches[2];
 
@@ -1528,7 +1528,7 @@ if ($operation == 'view') {  // just serve the existing page.
                 $htmllist .= "<li><a href='/$p'>$p</a>:<dl>\n";
                 $first = true;
                 foreach ($txt as $t) {
-                    $htmltxt = $t; //htmlspecialchars($t, ENT_QUOTES|ENT_SUBSTITUTE|ENT_DISALLOWED|ENT_HTML5, 'UTF-8');
+                    $htmltxt = htmlspecialchars($t, ENT_QUOTES|ENT_SUBSTITUTE|ENT_DISALLOWED|ENT_HTML5, 'UTF-8');
                     if ($first) {
                         $first = false;
                     } else {
