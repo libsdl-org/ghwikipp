@@ -364,6 +364,8 @@ if ($git_repo_lock_fp === false) {
     exit(1);
 }
 
+system("cd $escrawdata && git clean -dfq && git checkout -- . && git checkout main");
+
 handle_subdir($raw_data);  // get the root directory.
 
 $subdirs = array();
